@@ -1,0 +1,6 @@
+alembic
+discord
+Flask
+python-dotenv
+schedule
+sqlalchemy
