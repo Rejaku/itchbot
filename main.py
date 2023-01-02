@@ -24,8 +24,20 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 @bot.command()
-async def config(ctx, *args):
-    await ctx.send('pong')
+async def refresh(ctx, *args):
+    name = ' '.join(args)
+    if name:
+        visual_novels = session.query(VisualNovel) \
+            .filter(VisualNovel.name.contains(name)) \
+            .all()
+        matches = len(visual_novels)
+        if matches:
+            for visual_novel in visual_novels:
+                visual_novel.refresh_data(ITCH_API_KEY)
+                session.commit()
+            await search(ctx, name)
+    else:
+        await ctx.send(f'Found no matches for "{name}"')
 
 
 @bot.command()
