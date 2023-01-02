@@ -1,6 +1,8 @@
 alembic
 discord
 Flask
+Flask-Discord
 pymysql
 schedule
 sqlalchemy
+waitress
