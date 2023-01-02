@@ -1,11 +1,10 @@
-import datetime
 import json
-import re
 import threading
 import time
 import urllib.request
 
 import schedule
+
 from models import engine, Session, Base, VisualNovel
 
 Base.metadata.create_all(engine)
@@ -60,7 +59,7 @@ class Scheduler:
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
                             latest_version='unknown',
-                            created_at=time.time(),
+                            created_at=int(time.time()),
                             updated_at=0
                         )
                         session.add(visual_novel)
