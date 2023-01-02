@@ -1,14 +1,12 @@
 # coding=utf-8
 
-import os
 import datetime
 import json
+import os
 import re
-import threading
-import time
 import urllib.request
 
-from sqlalchemy import create_engine, Column, String, Integer, FLOAT
+from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -32,8 +30,8 @@ class VisualNovel(Base):
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
     latest_version = Column(String(20))
-    created_at = Column(FLOAT, nullable=False)
-    updated_at = Column(FLOAT)
+    created_at = Column(Integer, nullable=False)
+    updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version, created_at, updated_at):
         self.service = service
@@ -54,7 +52,7 @@ class VisualNovel(Base):
             for upload in uploads['uploads']:
                 if 'p_windows' in upload['traits']:
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                    timestamp = datetime.datetime.timestamp(element)
+                    timestamp = int(datetime.datetime.timestamp(element))
                     # Only process if the timestamp differs from already stored info
                     if self.updated_at != timestamp:
                         # Most projects just put the version number into the filename, so extract from there
@@ -71,3 +69,15 @@ class VisualNovel(Base):
                         self.latest_version = version
                         self.updated_at = timestamp
                     break
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    discord_id = Column(String(100), nullable=False)
+    processed_at = Column(Integer, nullable=False)
+
+    def __init__(self, discord_id, processed_at):
+        self.discord_id = discord_id
+        self.processed_at = processed_at
