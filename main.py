@@ -10,9 +10,9 @@ from scheduler import Scheduler
 
 load_dotenv()
 
-DISCORD_API_KEY = os.getenv('DISCORD_API_KEY')
-ITCH_API_KEY = os.getenv('ITCH_API_KEY')
-ITCH_COLLECTION_ID = os.getenv('ITCH_COLLECTION_ID')
+DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
+ITCH_API_KEY = os.environ['ITCH_API_KEY']
+ITCH_COLLECTION_ID = os.environ['ITCH_COLLECTION_ID']
 
 Base.metadata.create_all(engine)
 session = Session()

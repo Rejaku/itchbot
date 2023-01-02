@@ -1,10 +1,14 @@
 # coding=utf-8
 
+import os
 from sqlalchemy import create_engine, Column, String, Integer, FLOAT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine('sqlite:///VNs.db', echo=True)
+engine = create_engine(
+    f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
+    echo=True
+)
 Session = sessionmaker(bind=engine)
 
 Base = declarative_base()
