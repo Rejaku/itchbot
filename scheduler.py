@@ -12,6 +12,13 @@ Base.metadata.create_all(engine)
 session = Session()
 
 
+def update_version(itch_api_key):
+    visual_novels = session.query(VisualNovel).all()
+    for visual_novel in visual_novels:
+        visual_novel.refresh_data(itch_api_key)
+        session.commit()
+
+
 class Scheduler:
 
     def __init__(self):
@@ -52,40 +59,13 @@ class Scheduler:
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
-                            created_at=time.time()
+                            latest_version='unknown',
+                            created_at=time.time(),
+                            updated_at=0
                         )
                         session.add(visual_novel)
                         session.commit()
                 pass
-
-    def update_version(self):
-        visual_novels = session.query(VisualNovel).all()
-        for visual_novel in visual_novels:
-            req = urllib.request.Request('https://api.itch.io/games/' + visual_novel.game_id + '/uploads')
-            req.add_header('Authorization', self.itch_api_key)
-            with urllib.request.urlopen(req) as url:
-                uploads = json.load(url)
-                for upload in uploads['uploads']:
-                    if 'p_windows' in upload['traits']:
-                        element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                        timestamp = datetime.datetime.timestamp(element)
-                        # Only process if the timestamp differs from already stored info
-                        if visual_novel.updated_at != timestamp:
-                            # Most projects just put the version number into the filename, so extract from there
-                            version_number_source = upload['filename']
-                            # A few use the version number field in itch.io, prefer that, if set
-                            if upload.get('build') and upload['build'].get('user_version'):
-                                version_number_source = upload['build']['user_version']
-                            # Extract version number from source string, matches anything from 1 to 1.2.3.4...
-                            matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
-                            if matches:
-                                version = matches.group(0).rstrip('.')
-                            else:
-                                version = 'unknown'
-                            visual_novel.latest_version = version
-                            visual_novel.updated_at = timestamp
-                            session.commit()
-                        break
 
     def run(
         self,
@@ -100,9 +80,9 @@ class Scheduler:
 
     def scheduler(self):
         self.update_watchlist()
-        self.update_version()
+        #update_version(self.itch_api_key)
         schedule.every().day.do(self.update_watchlist)
-        schedule.every().hour.do(self.update_version)
+        schedule.every().hour.do(update_version)
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
