@@ -99,8 +99,8 @@ class Scheduler:
         thread.start()
 
     def scheduler(self):
-        #self.update_watchlist()
-        #self.update_version()
+        self.update_watchlist()
+        self.update_version()
         schedule.every().day.do(self.update_watchlist)
         schedule.every().hour.do(self.update_version)
         while True:
