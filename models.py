@@ -26,13 +26,15 @@ class VisualNovel(Base):
     thumb_url = Column(String(250))
     latest_version = Column(String(20))
     created_at = Column(FLOAT, nullable=False)
-    updated_at = Column(FLOAT, nullable=False)
+    updated_at = Column(FLOAT)
 
-    def __init__(self, service, game_id, name, description, url, thumb_url, created_at):
+    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version, created_at, updated_at):
         self.service = service
         self.game_id = game_id
         self.name = name
         self.description = description
         self.url = url
         self.thumb_url = thumb_url
+        self.latest_version = latest_version
         self.created_at = created_at
+        self.updated_at = updated_at
