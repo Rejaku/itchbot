@@ -4,11 +4,8 @@ import os
 
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
 from models import engine, Session, Base, VisualNovel
 from scheduler import Scheduler
-
-load_dotenv()
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
 ITCH_API_KEY = os.environ['ITCH_API_KEY']
