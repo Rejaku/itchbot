@@ -1,6 +1,6 @@
 alembic
 discord
 Flask
-python-dotenv
+pymysql
 schedule
 sqlalchemy
