@@ -5,17 +5,18 @@ import urllib.request
 
 import schedule
 
-from models import engine, Session, Base, VisualNovel
+from models import engine, Session, Base, Game
 
 Base.metadata.create_all(engine)
 session = Session()
 
 
 def update_version(itch_api_key):
-    visual_novels = session.query(VisualNovel).all()
-    for visual_novel in visual_novels:
-        visual_novel.refresh_data(itch_api_key)
+    games = session.query(Game).all()
+    for game in games:
+        game.refresh_data(itch_api_key)
         session.commit()
+        time.sleep(1)
 
 
 class Scheduler:
@@ -39,19 +40,19 @@ class Scheduler:
                     break
 
                 for collection_entry in collection['collection_games']:
-                    visual_novel = session.query(VisualNovel) \
-                        .filter(VisualNovel.service == 'itch', VisualNovel.game_id == collection_entry['game']['id']) \
+                    game = session.query(Game) \
+                        .filter(Game.service == 'itch', Game.game_id == collection_entry['game']['id']) \
                         .first()
                     # Update if already in DB
-                    if visual_novel:
-                        if collection_entry['game'].get('short_text') != visual_novel.description \
-                                or collection_entry['game'].get('cover_url') != visual_novel.thumb_url:
-                            visual_novel.description = collection_entry['game'].get('short_text')
-                            visual_novel.thumb_url = collection_entry['game'].get('cover_url')
-                            visual_novel.updated_at = time.time()
+                    if game:
+                        if collection_entry['game'].get('short_text') != game.description \
+                                or collection_entry['game'].get('cover_url') != game.thumb_url:
+                            game.description = collection_entry['game'].get('short_text')
+                            game.thumb_url = collection_entry['game'].get('cover_url')
+                            game.updated_at = time.time()
                             session.commit()
                     else:
-                        visual_novel = VisualNovel(
+                        game = Game(
                             service='itch',
                             game_id=collection_entry['game']['id'],
                             name=collection_entry['game']['title'],
@@ -62,7 +63,7 @@ class Scheduler:
                             created_at=int(time.time()),
                             updated_at=0
                         )
-                        session.add(visual_novel)
+                        session.add(game)
                         session.commit()
                 pass
 

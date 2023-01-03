@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, redirect, render_template, request, url_for
 from flask_discord import DiscordOAuth2Session, requires_authorization
-from models import engine, Session, Base, VisualNovel
+from models import engine, Session, Base, Game
 
 app = Flask(__name__)
 
@@ -23,7 +23,7 @@ HYPERLINK = '<a href="{}">{}</a>'
 
 
 @app.route("/")
-def index():
+def index_route():
     if not discord.authorized:
         return f"""
         {HYPERLINK.format(url_for(".login"), "Login")} <br />
@@ -40,34 +40,34 @@ def index():
 
 
 @app.route("/login/")
-def login():
+def login_route():
     return discord.create_session()
 
 
 @app.route("/login-data/")
-def login_with_data():
+def login_with_data_route():
     return discord.create_session(data=dict(redirect="/me/", coupon="15off", number=15, zero=0, status=False))
 
 
 @app.route("/invite-bot/")
-def invite_bot():
+def invite_bot_route():
     return discord.create_session(scope=["bot"], permissions=3072)
 
 
 @app.route("/invite-oauth/")
-def invite_oauth():
+def invite_oauth_route():
     return discord.create_session(scope=["bot", "identify"], permissions=3072)
 
 
 @app.route("/callback/")
-def callback():
+def callback_route():
     data = discord.callback()
 
     return redirect(data.get("redirect", "/"))
 
 
 @app.route("/me/")
-def me():
+def me_route():
     user = discord.fetch_user()
     return f"""
 <html>
@@ -83,19 +83,19 @@ def me():
 
 
 @app.route('/games/')
-def games():
+def games_route():
     return render_template('server_table.html')
 
 
 @app.route('/api/data')
-def api_data():
-    visual_novels = session.query(VisualNovel)
+def api_data_route():
+    games = session.query(Game)
 
     # search filter
     search = request.args.get('search')
     if search:
-        visual_novels = visual_novels.filter(VisualNovel.name.like(f'%{search}%'))
-    total = visual_novels.count()
+        games = games.filter(Game.name.like(f'%{search}%'))
+    total = games.count()
 
     # sorting
     sort = request.args.get('sort') or '+name'
@@ -104,37 +104,37 @@ def api_data():
         for s in sort.split(','):
             direction = s[0]
             name = s[1:]
-            if name not in ['name', 'updated_at']:
+            if name not in ['name', 'rating', 'updated_at']:
                 name = 'name'
-            col = getattr(VisualNovel, name)
+            col = getattr(Game, name)
             if direction == '-':
                 col = col.desc()
             order.append(col)
         if order:
-            visual_novels = visual_novels.order_by(*order)
+            games = games.order_by(*order)
 
     # pagination
     start = request.args.get('start', type=int, default=-1)
     length = request.args.get('length', type=int, default=-1)
     if start != -1 and length != -1:
-        visual_novels = visual_novels.offset(start).limit(length)
+        games = games.offset(start).limit(length)
 
     # response
     return {
-        'data': [visual_novel.to_dict() for visual_novel in visual_novels],
+        'data': [game.to_dict() for game in games],
         'total': total,
     }
 
 
 @app.route("/logout/")
-def logout():
+def logout_route():
     discord.revoke()
     return redirect(url_for(".index"))
 
 
 @app.route("/secret/")
 @requires_authorization
-def secret():
+def secret_route():
     return os.urandom(16)
 
 

@@ -6,9 +6,10 @@ import os
 import re
 import urllib.request
 
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from bs4 import BeautifulSoup
 
 engine = create_engine(
     f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
@@ -19,8 +20,8 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
 
-class VisualNovel(Base):
-    __tablename__ = 'visual_novels'
+class Game(Base):
+    __tablename__ = 'games'
 
     id = Column(Integer, primary_key=True)
     service = Column(String(50), nullable=False)
@@ -30,10 +31,13 @@ class VisualNovel(Base):
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
     latest_version = Column(String(20))
+    tags = Column(String(250))
+    rating = Column(Float)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
-    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version, created_at, updated_at):
+    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', tags=None,
+                 rating=None, created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -41,6 +45,8 @@ class VisualNovel(Base):
         self.url = url
         self.thumb_url = thumb_url
         self.latest_version = latest_version
+        self.tags = tags
+        self.rating = rating
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -54,11 +60,30 @@ class VisualNovel(Base):
             'url': self.url,
             'thumb_url': self.thumb_url,
             'latest_version': self.latest_version,
+            'tags': self.tags,
+            'rating': self.rating,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
 
     def refresh_data(self, itch_api_key):
+        # Update rating and tags
+        req = urllib.request.Request(self.url)
+        req.add_header('Authorization', itch_api_key)
+        with urllib.request.urlopen(req) as url:
+            html = url.read().decode("utf8")
+            soup = BeautifulSoup(html, 'html.parser')
+            json_lds = soup.findAll("script", {"type": "application/ld+json"})
+            for json_ld in json_lds:
+                json_content = json.loads("".join(json_ld.contents))
+                if json_content.get('aggregateRating'):
+                    self.rating = json_content['aggregateRating'].get('ratingValue')
+            info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
+            for tr in info_table.findAll('tr'):
+                if tr.text.find('Tags') > -1:
+                    self.tags = tr.text.lstrip('Tags')
+
+        # Update version
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:

@@ -30,11 +30,13 @@
             },
             {id: 'description', name: 'Description', sort: false},
             {id: 'latest_version', name: 'Latest Version', sort: false},
+            {id: 'rating', name: 'Rating'},
             {
                 id: 'updated_at', name: 'Last Update', formatter: (cell) => {
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
+            {id: 'tags', name: 'Tags', sort: false},
             {
                 id: 'url', name: 'URL', formatter: (cell) => {
                     return gridjs.html('<a href="' + cell + '">' + cell + '</a>');
@@ -59,7 +61,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['name', 'description', 'latest_version', 'updated_at', 'url'];
+                    const columnIds = ['name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags', 'url'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
