@@ -1,4 +1,5 @@
 alembic
+bs4
 discord
 Flask
 Flask-Discord

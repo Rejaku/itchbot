@@ -5,7 +5,7 @@ import time
 
 import discord
 from discord.ext import commands, tasks
-from models import engine, Session, Base, VisualNovel, User
+from models import engine, Session, Base, Game, User
 from scheduler import Scheduler
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
@@ -36,13 +36,13 @@ async def notify_about_updates():
     users = session.query(User)
     for user in users:
         start_time = time.time()
-        visual_novels = session.query(VisualNovel).filter(VisualNovel.updated_at > user.processed_at).order_by('name').all()
-        if visual_novels:
+        games = session.query(Game).filter(Game.updated_at > user.processed_at).order_by('name').all()
+        if games:
             discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
-            result = f'Found {len(visual_novels)} new updates:\n'
-            for visual_novel in visual_novels:
-                result += f'{visual_novel.name}, Latest Version: {visual_novel.latest_version}, ' \
-                          f'Last Updated At: <t:{visual_novel.updated_at}:f> <{visual_novel.url}>\n'
+            result = f'Found {len(games)} new updates:\n'
+            for game in games:
+                result += f'{game.name}, Latest Version: {game.latest_version}, ' \
+                          f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
                 if len(result) > 1600:
                     await discord_user.send(result)
                     result = ''
@@ -84,14 +84,15 @@ async def unsubscribe(ctx):
 async def refresh(ctx, *args):
     name = ' '.join(args)
     if name:
-        visual_novels = session.query(VisualNovel) \
-            .filter(VisualNovel.name.contains(name)) \
+        games = session.query(Game) \
+            .filter(Game.name.contains(name)) \
             .all()
-        matches = len(visual_novels)
+        matches = len(games)
         if matches:
-            for visual_novel in visual_novels:
-                visual_novel.refresh_data(ITCH_API_KEY)
+            for game in games:
+                game.refresh_data(ITCH_API_KEY)
                 session.commit()
+                time.sleep(1)
             await search(ctx, name)
     else:
         await ctx.send(f'Found no matches for "{name}"')
@@ -101,15 +102,15 @@ async def refresh(ctx, *args):
 async def search(ctx, *args):
     name = ' '.join(args)
     if name:
-        visual_novels = session.query(VisualNovel) \
-            .filter(VisualNovel.name.contains(name)) \
+        games = session.query(Game) \
+            .filter(Game.name.contains(name)) \
             .all()
-        matches = len(visual_novels)
+        matches = len(games)
         if matches:
             result = f'Found {matches} matches for "{name}":\n'
-            for visual_novel in visual_novels:
-                result += f'{visual_novel.name}, Latest Version: {visual_novel.latest_version}, ' \
-                          f'Last Updated At: <t:{visual_novel.updated_at}:f> <{visual_novel.url}>\n'
+            for game in games:
+                result += f'{game.name}, Latest Version: {game.latest_version}, ' \
+                          f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
         else:
             result = f'Found no matches for "{name}"'
     else:
