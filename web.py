@@ -1,7 +1,8 @@
 import os
 
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, render_template, request, url_for
 from flask_discord import DiscordOAuth2Session, requires_authorization
+from models import engine, Session, Base, VisualNovel
 
 app = Flask(__name__)
 
@@ -14,6 +15,9 @@ app.config["DISCORD_BOT_TOKEN"] = os.getenv("DISCORD_API_KEY")
 app.config["DISCORD_REDIRECT_URI"] = os.getenv("DISCORD_REDIRECT_URI")
 
 discord = DiscordOAuth2Session(app)
+
+Base.metadata.create_all(engine)
+session = Session()
 
 HYPERLINK = '<a href="{}">{}</a>'
 
@@ -72,29 +76,54 @@ def me():
 </head>
 <body><img src='{user.avatar_url or user.default_avatar_url}' />
 <p>Is avatar animated: {str(user.is_avatar_animated)}</p>
-<a href={url_for("my_connections")}>Connections</a>
-<br />
 </body>
 </html>
 
 """
 
 
-@app.route("/me/connections/")
-def my_connections():
-    user = discord.fetch_user()
-    connections = discord.fetch_connections()
-    return f"""
-<html>
-<head>
-<title>{user.name}</title>
-</head>
-<body>
-{str([f"{connection.name} - {connection.type}" for connection in connections])}
-</body>
-</html>
+@app.route('/games/')
+def games():
+    return render_template('server_table.html')
 
-"""
+
+@app.route('/api/data')
+def api_data():
+    visual_novels = session.query(VisualNovel)
+
+    # search filter
+    search = request.args.get('search')
+    if search:
+        visual_novels = visual_novels.filter(VisualNovel.name.like(f'%{search}%'))
+    total = visual_novels.count()
+
+    # sorting
+    sort = request.args.get('sort') or '+name'
+    if sort:
+        order = []
+        for s in sort.split(','):
+            direction = s[0]
+            name = s[1:]
+            if name not in ['name', 'updated_at']:
+                name = 'name'
+            col = getattr(VisualNovel, name)
+            if direction == '-':
+                col = col.desc()
+            order.append(col)
+        if order:
+            visual_novels = visual_novels.order_by(*order)
+
+    # pagination
+    start = request.args.get('start', type=int, default=-1)
+    length = request.args.get('length', type=int, default=-1)
+    if start != -1 and length != -1:
+        visual_novels = visual_novels.offset(start).limit(length)
+
+    # response
+    return {
+        'data': [visual_novel.to_dict() for visual_novel in visual_novels],
+        'total': total,
+    }
 
 
 @app.route("/logout/")
