@@ -66,8 +66,7 @@ class Game(Base):
             'updated_at': self.updated_at
         }
 
-    def refresh_data(self, itch_api_key):
-        # Update rating and tags
+    def refresh_tags_and_rating(self, itch_api_key):
         req = urllib.request.Request(self.url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
@@ -83,7 +82,7 @@ class Game(Base):
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.lstrip('Tags')
 
-        # Update version
+    def refresh_version(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:

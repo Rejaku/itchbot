@@ -11,12 +11,18 @@ Base.metadata.create_all(engine)
 session = Session()
 
 
-def update_version(itch_api_key):
+def refresh_tags_and_rating(itch_api_key):
     games = session.query(Game).all()
     for game in games:
-        game.refresh_data(itch_api_key)
+        game.refresh_tags_and_rating(itch_api_key)
         session.commit()
         time.sleep(1)
+
+def refresh_version(itch_api_key):
+    games = session.query(Game).all()
+    for game in games:
+        game.refresh_version(itch_api_key)
+        session.commit()
 
 
 class Scheduler:
@@ -82,7 +88,8 @@ class Scheduler:
         self.update_watchlist()
         #update_version(self.itch_api_key)
         schedule.every().day.do(self.update_watchlist)
-        schedule.every().hour.do(update_version)
+        schedule.every().day.do(refresh_tags_and_rating)
+        schedule.every().hour.do(refresh_version)
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
