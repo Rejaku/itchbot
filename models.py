@@ -44,6 +44,20 @@ class VisualNovel(Base):
         self.created_at = created_at
         self.updated_at = updated_at
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'service': self.service,
+            'game_id': self.game_id,
+            'name': self.name,
+            'description': self.description,
+            'url': self.url,
+            'thumb_url': self.thumb_url,
+            'latest_version': self.latest_version,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
+        }
+
     def refresh_data(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
