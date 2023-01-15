@@ -1,9 +1,14 @@
 alembic
 bs4
 discord
+flake8
 Flask
 Flask-Discord
+mypy
 pymysql
 schedule
 sqlalchemy
+sqlalchemy2-stubs
+types-beautifulsoup4
+types-waitress
 waitress
