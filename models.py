@@ -88,26 +88,25 @@ class Game(Base):
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
             uploads = json.load(url)
-            for upload in uploads['uploads']:
-                if 'p_windows' in upload['traits']:
-                    element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                    timestamp = int(datetime.datetime.timestamp(element))
-                    # Only process if the timestamp differs from already stored info
-                    if self.updated_at != timestamp:
-                        # Most projects just put the version number into the filename, so extract from there
-                        version_number_source = upload['filename']
-                        # A few use the version number field in itch.io, prefer that, if set
-                        if upload.get('build') and upload['build'].get('user_version'):
-                            version_number_source = upload['build']['user_version']
-                        # Extract version number from source string, matches anything from 1 to 1.2.3.4...
-                        matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
-                        if matches:
-                            version = matches.group(0).rstrip('.')
-                        else:
-                            version = 'unknown'
-                        self.latest_version = version
-                        self.updated_at = timestamp
-                    break
+            if uploads['uploads']:
+                upload = uploads['uploads'].pop()
+                element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
+                timestamp = int(datetime.datetime.timestamp(element))
+                # Only process if the timestamp differs from already stored info
+                if self.updated_at != timestamp:
+                    # Most projects just put the version number into the filename, so extract from there
+                    version_number_source = upload['filename']
+                    # A few use the version number field in itch.io, prefer that, if set
+                    if upload.get('build') and upload['build'].get('user_version'):
+                        version_number_source = upload['build']['user_version']
+                    # Extract version number from source string, matches anything from 1 to 1.2.3.4...
+                    matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
+                    if matches:
+                        version = matches.group(0).rstrip('.')
+                    else:
+                        version = 'unknown'
+                    self.latest_version = version
+                    self.updated_at = timestamp
 
 
 class User(Base):
