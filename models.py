@@ -7,12 +7,13 @@ import re
 import urllib.request
 
 from sqlalchemy import create_engine, Column, String, Integer, Float
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
 
 engine = create_engine(
     f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
+    pool_pre_ping=True,
+    pool_recycle=1800,
     echo=True
 )
 Session = sessionmaker(bind=engine)

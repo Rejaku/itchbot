@@ -26,16 +26,16 @@ HYPERLINK = '<a href="{}">{}</a>'
 def index_route():
     if not discord.authorized:
         return f"""
-        {HYPERLINK.format(url_for(".login"), "Login")} <br />
-        {HYPERLINK.format(url_for(".login_with_data"), "Login with custom data")} <br />
-        {HYPERLINK.format(url_for(".invite_bot"), "Invite Bot with permissions 3072 (Read & Send Messages)")} <br />
-        {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
+        {HYPERLINK.format(url_for(".login_route"), "Login")} <br />
+        {HYPERLINK.format(url_for(".login_with_data_route"), "Login with custom data")} <br />
+        {HYPERLINK.format(url_for(".invite_bot_route"), "Invite Bot with permissions 3072 (Read & Send Messages)")} <br />
+        {HYPERLINK.format(url_for(".invite_oauth_route"), "Authorize with oauth and bot invite")}
         """
 
     return f"""
-    {HYPERLINK.format(url_for(".me"), "@ME")}<br />
-    {HYPERLINK.format(url_for(".invite_bot"), "Invite Bot with permissions 3072 (Read & Send Messages)")} <br />
-    {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
+    {HYPERLINK.format(url_for(".me_route"), "@ME")}<br />
+    {HYPERLINK.format(url_for(".invite_bot_route"), "Invite Bot with permissions 3072 (Read & Send Messages)")} <br />
+    {HYPERLINK.format(url_for(".logout_route"), "Logout")}<br />
     """
 
 
@@ -129,7 +129,7 @@ def api_data_route():
 @app.route("/logout/")
 def logout_route():
     discord.revoke()
-    return redirect(url_for(".index"))
+    return redirect(url_for(".index_route"))
 
 
 @app.route("/secret/")
