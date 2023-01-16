@@ -91,7 +91,6 @@ class Game(Base):
             if uploads['uploads']:
                 for upload in uploads['uploads']:
                     if not upload['traits'] or 'p_android' not in upload['traits']:
-                        upload = uploads['uploads'].pop()
                         element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                         timestamp = int(datetime.datetime.timestamp(element))
                         # Only process if the timestamp differs from already stored info
