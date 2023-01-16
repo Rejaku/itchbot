@@ -8,21 +8,24 @@ import schedule
 from models import engine, Session, Base, Game
 
 Base.metadata.create_all(engine)
-session = Session()
 
 
 def refresh_tags_and_rating(itch_api_key):
+    session = Session()
     games = session.query(Game).all()
     for game in games:
         game.refresh_tags_and_rating(itch_api_key)
         session.commit()
         time.sleep(1)
+    session.close()
 
 def refresh_version(itch_api_key):
+    session = Session()
     games = session.query(Game).all()
     for game in games:
         game.refresh_version(itch_api_key)
         session.commit()
+    session.close()
 
 
 class Scheduler:
@@ -32,6 +35,7 @@ class Scheduler:
         self.itch_collection_id = None
 
     def update_watchlist(self):
+        session = Session()
         page = 0
         while True:
             page += 1
@@ -72,6 +76,7 @@ class Scheduler:
                         session.add(game)
                         session.commit()
                 pass
+        session.close()
 
     def run(
         self,
