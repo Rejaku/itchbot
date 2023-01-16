@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
     <title>Games</title>
-    <link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
             font-family: Sans-Serif, serif;
@@ -14,7 +14,7 @@
     <hr>
     <div id="table"></div>
 </div>
-<script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+<script src="https://unpkg.com/gridjs@5/dist/gridjs.umd.js"></script>
 <script>
     const updateUrl = (prev, query) => {
         return prev + (prev.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(query).toString();
