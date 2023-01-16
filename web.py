@@ -17,7 +17,6 @@ app.config["DISCORD_REDIRECT_URI"] = os.getenv("DISCORD_REDIRECT_URI")
 discord = DiscordOAuth2Session(app)
 
 Base.metadata.create_all(engine)
-session = Session()
 
 HYPERLINK = '<a href="{}">{}</a>'
 
@@ -89,6 +88,7 @@ def games_route():
 
 @app.route('/api/data')
 def api_data_route():
+    session = Session()
     games = session.query(Game)
 
     # search filter
@@ -119,11 +119,14 @@ def api_data_route():
     if start != -1 and length != -1:
         games = games.offset(start).limit(length)
 
-    # response
-    return {
+    result = {
         'data': [game.to_dict() for game in games],
         'total': total,
     }
+    session.close()
+
+    # response
+    return result
 
 
 @app.route("/logout/")

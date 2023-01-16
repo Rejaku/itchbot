@@ -13,7 +13,6 @@ ITCH_API_KEY = os.environ['ITCH_API_KEY']
 ITCH_COLLECTION_ID = os.environ['ITCH_COLLECTION_ID']
 
 Base.metadata.create_all(engine)
-session = Session()
 
 scheduler = Scheduler()
 scheduler.run(ITCH_API_KEY, ITCH_COLLECTION_ID)
@@ -33,6 +32,7 @@ async def on_ready():
 @tasks.loop(minutes=30)
 async def notify_about_updates():
     await bot.wait_until_ready()
+    session = Session()
     users = session.query(User)
     for user in users:
         start_time = time.time()
@@ -50,10 +50,12 @@ async def notify_about_updates():
                 await discord_user.send(result)
             user.processed_at = int(start_time)
             session.commit()
+    session.close()
 
 
 @bot.command()
 async def subscribe(ctx):
+    session = Session()
     user = session.query(User) \
         .filter(User.discord_id == ctx.author.id) \
         .first()
@@ -65,10 +67,12 @@ async def subscribe(ctx):
         await ctx.send('You\'ve subscribed to receive update infos.')
     else:
         await ctx.send('You\'ve already subscribed to receive update infos.')
+    session.close()
 
 
 @bot.command()
 async def unsubscribe(ctx):
+    session = Session()
     user = session.query(User) \
         .filter(User.discord_id == ctx.author.id) \
         .first()
@@ -78,12 +82,14 @@ async def unsubscribe(ctx):
         await ctx.send('You\'ve unsubscribed from update infos.')
     else:
         await ctx.send('You\'re not currently subscribed.')
+    session.close()
 
 
 @bot.command()
 async def refresh(ctx, *args):
     name = ' '.join(args)
     if name:
+        session = Session()
         games = session.query(Game) \
             .filter(Game.name.contains(name)) \
             .all()
@@ -95,6 +101,7 @@ async def refresh(ctx, *args):
                 session.commit()
                 time.sleep(1)
             await search(ctx, name)
+        session.close()
     else:
         await ctx.send(f'Found no matches for "{name}"')
 
@@ -103,6 +110,7 @@ async def refresh(ctx, *args):
 async def search(ctx, *args):
     name = ' '.join(args)
     if name:
+        session = Session()
         games = session.query(Game) \
             .filter(Game.name.contains(name)) \
             .all()
@@ -114,6 +122,7 @@ async def search(ctx, *args):
                           f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
         else:
             result = f'Found no matches for "{name}"'
+        session.close()
     else:
         result = 'Usage: <command> <search term>'
     await ctx.send(result.strip())
