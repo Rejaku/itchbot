@@ -94,8 +94,8 @@ class Scheduler:
         self.update_watchlist()
         #update_version(self.itch_api_key)
         schedule.every().day.do(self.update_watchlist)
-        schedule.every().day.do(refresh_tags_and_rating)
-        schedule.every().hour.do(refresh_version)
+        schedule.every().day.do(refresh_tags_and_rating(self.itch_api_key))
+        schedule.every().hour.do(refresh_version(self.itch_api_key))
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
