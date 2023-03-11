@@ -19,6 +19,7 @@ def refresh_tags_and_rating(itch_api_key):
         time.sleep(1)
     session.close()
 
+
 def refresh_version(itch_api_key):
     session = Session()
     games = session.query(Game).all()
