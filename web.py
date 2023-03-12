@@ -21,7 +21,12 @@ Base.metadata.create_all(engine)
 HYPERLINK = '<a href="{}">{}</a>'
 
 
-@app.route("/")
+@app.route('/')
+def games_route():
+    return render_template('server_table.html')
+
+
+@app.route("/discord/")
 def index_route():
     if not discord.authorized:
         return f"""
@@ -79,11 +84,6 @@ def me_route():
 </html>
 
 """
-
-
-@app.route('/games/')
-def games_route():
-    return render_template('server_table.html')
 
 
 @app.route('/api/data')
