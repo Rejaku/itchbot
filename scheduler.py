@@ -11,7 +11,7 @@ Base.metadata.create_all(engine)
 
 
 def refresh_tags_and_rating(itch_api_key):
-    refresh_version('[refresh_tags_and_rating] Start')
+    print('[refresh_tags_and_rating] Start')
     session = Session()
     games = session.query(Game).all()
     for game in games:
@@ -19,18 +19,18 @@ def refresh_tags_and_rating(itch_api_key):
         session.commit()
         time.sleep(1)
     session.close()
-    refresh_version('[refresh_tags_and_rating] End')
+    print('[refresh_tags_and_rating] End')
 
 
 def refresh_version(itch_api_key):
-    refresh_version('[refresh_version] Start')
+    print('[refresh_version] Start')
     session = Session()
     games = session.query(Game).all()
     for game in games:
         game.refresh_version(itch_api_key)
         session.commit()
     session.close()
-    refresh_version('[refresh_version] End')
+    print('[refresh_version] End')
 
 
 class Scheduler:
@@ -40,7 +40,7 @@ class Scheduler:
         self.itch_collection_id = None
 
     def update_watchlist(self):
-        refresh_version('[update_watchlist] Start')
+        print('[update_watchlist] Start')
         session = Session()
         page = 0
         while True:
@@ -83,7 +83,7 @@ class Scheduler:
                         session.commit()
                 pass
         session.close()
-        refresh_version('[update_watchlist] End')
+        print('[update_watchlist] End')
 
     def run(
         self,
@@ -97,7 +97,7 @@ class Scheduler:
         thread.start()
 
     def scheduler(self):
-        refresh_version('[scheduler] Start')
+        print('[scheduler] Start')
         self.update_watchlist()
         schedule.every().day.do(self.update_watchlist)
         schedule.every().day.do(refresh_tags_and_rating(self.itch_api_key))
