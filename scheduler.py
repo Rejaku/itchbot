@@ -1,7 +1,9 @@
+import http
 import json
 import threading
 import time
 import urllib.request
+from http.client import RemoteDisconnected
 
 import schedule
 
@@ -14,10 +16,13 @@ def refresh_tags_and_rating(itch_api_key):
     print('[refresh_tags_and_rating] Start')
     session = Session()
     games = session.query(Game).all()
-    for game in games:
-        game.refresh_tags_and_rating(itch_api_key)
-        session.commit()
-        time.sleep(5)
+    try:
+        for game in games:
+            game.refresh_tags_and_rating(itch_api_key)
+            session.commit()
+            time.sleep(5)
+    except RemoteDisconnected:
+        pass
     session.close()
     print('[refresh_tags_and_rating] End')
 
@@ -98,10 +103,9 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
-        self.update_watchlist()
         schedule.every().day.do(self.update_watchlist)
         schedule.every().hour.do(refresh_version, self.itch_api_key)
-        # schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
+        schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
