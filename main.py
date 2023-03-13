@@ -120,6 +120,9 @@ async def search(ctx, *args):
         if matches:
             result = f'Found {matches} matches for "{name}":\n'
             for game in games:
+                if len(result) > 1600:
+                    await ctx.send(result.strip())
+                    result = ''
                 result += f'{game.name}, Latest Version: {game.latest_version}, ' \
                           f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
         else:
