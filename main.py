@@ -3,7 +3,6 @@
 import os
 import time
 
-import discord
 from discord.ext import commands, tasks
 from models import engine, Session, Base, Game, User
 from scheduler import Scheduler
@@ -17,10 +16,7 @@ Base.metadata.create_all(engine)
 scheduler = Scheduler()
 scheduler.run(ITCH_API_KEY, ITCH_COLLECTION_ID)
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot()
 
 
 @bot.event
@@ -55,7 +51,7 @@ async def notify_about_updates():
     session.close()
 
 
-@bot.command()
+@bot.slash_command(name="subscribe")
 async def subscribe(ctx):
     session = Session()
     user = session.query(User) \
@@ -66,13 +62,13 @@ async def subscribe(ctx):
         user = User(discord_id=ctx.author.id, processed_at=int(time.time()))
         session.add(user)
         session.commit()
-        await ctx.send('You\'ve subscribed to receive update infos.')
+        await ctx.respond('You\'ve subscribed to receive update infos.')
     else:
-        await ctx.send('You\'ve already subscribed to receive update infos.')
+        await ctx.respond('You\'ve already subscribed to receive update infos.')
     session.close()
 
 
-@bot.command()
+@bot.slash_command(name="unsubscribe")
 async def unsubscribe(ctx):
     session = Session()
     user = session.query(User) \
@@ -81,15 +77,14 @@ async def unsubscribe(ctx):
     if user:
         session.delete(user)
         session.commit()
-        await ctx.send('You\'ve unsubscribed from update infos.')
+        await ctx.respond('You\'ve unsubscribed from update infos.')
     else:
-        await ctx.send('You\'re not currently subscribed.')
+        await ctx.respond('You\'re not currently subscribed.')
     session.close()
 
 
-@bot.command()
-async def refresh(ctx, *args):
-    name = ' '.join(args)
+@bot.slash_command(name="refresh")
+async def refresh(ctx, name):
     if name:
         session = Session()
         games = session.query(Game) \
@@ -105,12 +100,11 @@ async def refresh(ctx, *args):
             await search(ctx, name)
         session.close()
     else:
-        await ctx.send(f'Found no matches for "{name}"')
+        await ctx.respond(f'Found no matches for "{name}"')
 
 
-@bot.command()
-async def search(ctx, *args):
-    name = ' '.join(args)
+@bot.slash_command(name="search")
+async def search(ctx, name):
     if name:
         session = Session()
         games = session.query(Game) \
@@ -121,7 +115,7 @@ async def search(ctx, *args):
             result = f'Found {matches} matches for "{name}":\n'
             for game in games:
                 if len(result) > 1600:
-                    await ctx.send(result.strip())
+                    await ctx.respond(result.strip())
                     result = ''
                 result += f'{game.name}, Latest Version: {game.latest_version}, ' \
                           f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
@@ -130,7 +124,7 @@ async def search(ctx, *args):
         session.close()
     else:
         result = 'Usage: <command> <search term>'
-    await ctx.send(result.strip())
+    await ctx.respond(result.strip())
 
 
 bot.run(DISCORD_API_KEY)

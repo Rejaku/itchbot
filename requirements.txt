@@ -1,10 +1,10 @@
 alembic
 bs4
-discord
 flake8
 Flask
 Flask-Discord
 mypy
+py-cord
 pymysql
 schedule
 sqlalchemy
