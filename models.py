@@ -79,9 +79,11 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            devlogs = soup.find("section", id="devlog").find_all('a', href=True)
-            if devlogs:
-                self.devlog = devlogs[0]['href']
+            devlog = soup.find("section", id="devlog")
+            if devlog:
+                devlog_links = devlog.find_all('a', href=True)
+                if devlog_links:
+                    self.devlog = devlog_links[0]['href']
             json_lds = soup.findAll("script", {"type": "application/ld+json"})
             for json_ld in json_lds:
                 json_content = json.loads("".join(json_ld.contents))
