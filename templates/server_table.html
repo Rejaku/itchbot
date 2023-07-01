@@ -52,6 +52,7 @@
                 }
             },
             {id: 'tags', name: 'Tags', sort: false},
+            {id: 'status', name: 'Status'},
         ],
         server: {
             url: '/api/data',
@@ -71,7 +72,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags'];
+                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },

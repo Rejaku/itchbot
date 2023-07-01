@@ -66,8 +66,10 @@ class Scheduler:
                         .first()
                     # Update if already in DB
                     if game:
-                        if collection_entry['game'].get('short_text') != game.description \
+                        if collection_entry['game'].get('title') != game.name \
+                                or collection_entry['game'].get('short_text') != game.description \
                                 or collection_entry['game'].get('cover_url') != game.thumb_url:
+                            game.name = collection_entry['game'].get('title')
                             game.description = collection_entry['game'].get('short_text')
                             game.thumb_url = collection_entry['game'].get('cover_url')
                             game.updated_at = time.time()
@@ -104,7 +106,7 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
-        #self.update_watchlist()
+        self.update_watchlist()
         schedule.every().day.do(self.update_watchlist)
         schedule.every().hour.do(refresh_version, self.itch_api_key)
         schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)

@@ -36,11 +36,12 @@ class Game(Base):
     tags = Column(String(250))
     rating = Column(Float)
     rating_count = Column(Integer)
+    status = Column(String(50))
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
-                 tags=None, rating=None, rating_count=None, created_at=0, updated_at=0):
+                 tags=None, rating=None, rating_count=None, status='unknown', created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -52,6 +53,7 @@ class Game(Base):
         self.tags = tags
         self.rating = rating
         self.rating_count = rating_count
+        self.status = status
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -69,6 +71,7 @@ class Game(Base):
             'tags': self.tags,
             'rating': self.rating,
             'rating_count': self.rating_count,
+            'status': self.status,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -79,6 +82,10 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
+            if self.status == 'unknown':
+                game_info = soup.find_all(".game_info_panel_widget a", href=True)
+                if game_info:
+                    self.status = game_info[0].text
             devlog = soup.find("section", id="devlog")
             if devlog:
                 devlog_links = devlog.find_all('a', href=True)
