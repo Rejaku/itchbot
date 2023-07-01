@@ -27,7 +27,7 @@ class Game(Base):
     id = Column(Integer, primary_key=True)
     service = Column(String(50), nullable=False)
     game_id = Column(String(50), nullable=False)
-    name = Column(String(50), nullable=False)
+    name = Column(String(200), nullable=False)
     description = Column(String(200))
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
