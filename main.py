@@ -94,10 +94,10 @@ async def refresh(ctx, name):
         if matches:
             for game in games:
                 game.refresh_tags_and_rating(ITCH_API_KEY)
-                game.refresh_version(ITCH_API_KEY)
+                #game.refresh_version(ITCH_API_KEY)
                 session.commit()
                 time.sleep(1)
-            await search(ctx, name)
+            #await search(ctx, name)
         session.close()
     else:
         await ctx.respond(f'Found no matches for "{name}"')

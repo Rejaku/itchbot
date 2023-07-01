@@ -32,13 +32,15 @@ class Game(Base):
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
     latest_version = Column(String(20))
+    devlog = Column(String(250))
     tags = Column(String(250))
     rating = Column(Float)
+    rating_count = Column(Integer)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
-    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', tags=None,
-                 rating=None, created_at=0, updated_at=0):
+    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
+                 tags=None, rating=None, rating_count=None, created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -46,8 +48,10 @@ class Game(Base):
         self.url = url
         self.thumb_url = thumb_url
         self.latest_version = latest_version
+        self.devlog = devlog
         self.tags = tags
         self.rating = rating
+        self.rating_count = rating_count
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -61,8 +65,10 @@ class Game(Base):
             'url': self.url,
             'thumb_url': self.thumb_url,
             'latest_version': self.latest_version,
+            'devlog': self.devlog,
             'tags': self.tags,
             'rating': self.rating,
+            'rating_count': self.rating_count,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -73,11 +79,15 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
+            devlogs = soup.find("section", id="devlog").find_all('a', href=True)
+            if devlogs:
+                self.devlog = devlogs[0]['href']
             json_lds = soup.findAll("script", {"type": "application/ld+json"})
             for json_ld in json_lds:
                 json_content = json.loads("".join(json_ld.contents))
                 if json_content.get('aggregateRating'):
                     self.rating = json_content['aggregateRating'].get('ratingValue')
+                    self.rating_count = json_content['aggregateRating'].get('ratingCount')
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Tags') > -1:

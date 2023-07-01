@@ -22,26 +22,34 @@
 
     new gridjs.Grid({
         columns: [
-            {id: 'name', name: 'Name'},
+            {id: 'url', name: 'URL', sort: false, hidden: true},
+            {id: 'devlog', name: 'Devlog', sort: false, hidden: true},
+            {id: 'rating_count', name: 'Rating Count', sort: false, hidden: true},
+            {id: 'name', name: 'Name', formatter: (cell, row) => {
+                    return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
+                }
+            },
             {
                 id: 'thumb_url', name: 'Thumbnail', formatter: (cell) => {
                     return cell ? gridjs.html('<img src="' + cell + '" width="150" alt=""/>') : '';
                 }, sort: false
             },
             {id: 'description', name: 'Description', sort: false},
-            {id: 'latest_version', name: 'Latest Version', sort: false},
-            {id: 'rating', name: 'Rating'},
+            {
+                id: 'latest_version', name: 'Latest Version', formatter: (cell, row) => {
+                    return gridjs.html('<a target="_blank" href="' + row.cells[1].data + '">' + cell + '</a>');
+                }, sort: false
+            },
+            {id: 'rating', name: 'Rating', formatter: (cell, row) => {
+                    return cell + ' (' + row.cells[2].data + ' votes)';
+                }
+            },
             {
                 id: 'updated_at', name: 'Last Update', formatter: (cell) => {
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
             {id: 'tags', name: 'Tags', sort: false},
-            {
-                id: 'url', name: 'URL', formatter: (cell) => {
-                    return gridjs.html('<a href="' + cell + '">' + cell + '</a>');
-                }, sort: false
-            },
         ],
         server: {
             url: '/api/data',
@@ -61,7 +69,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags', 'url'];
+                    const columnIds = ['name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
