@@ -25,7 +25,8 @@
             {id: 'url', name: 'URL', sort: false, hidden: true},
             {id: 'devlog', name: 'Devlog', sort: false, hidden: true},
             {id: 'rating_count', name: 'Rating Count', sort: false, hidden: true},
-            {id: 'name', name: 'Name', formatter: (cell, row) => {
+            {
+                id: 'name', name: 'Name', formatter: (cell, row) => {
                     return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
                 }
             },
@@ -40,7 +41,8 @@
                     return gridjs.html('<a target="_blank" href="' + row.cells[1].data + '">' + cell + '</a>');
                 }, sort: false
             },
-            {id: 'rating', name: 'Rating', formatter: (cell, row) => {
+            {
+                id: 'rating', name: 'Rating', formatter: (cell, row) => {
                     return cell + ' (' + row.cells[2].data + ' votes)';
                 }
             },
@@ -69,7 +71,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags'];
+                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
