@@ -86,6 +86,7 @@ class Scheduler:
                         )
                         session.add(game)
                         session.commit()
+                    time.sleep(5)
                 pass
         session.close()
         print('[update_watchlist] End')
