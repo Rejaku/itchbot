@@ -108,7 +108,7 @@ class Scheduler:
         print('[scheduler] Start')
         self.update_watchlist()
         schedule.every().day.do(self.update_watchlist)
-        schedule.every(6).hour.do(refresh_version, self.itch_api_key)
+        schedule.every(6).hours.do(refresh_version, self.itch_api_key)
         schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
         while True:
             # Checks whether a scheduled task

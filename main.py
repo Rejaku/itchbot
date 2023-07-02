@@ -86,6 +86,7 @@ async def unsubscribe(ctx):
 @bot.slash_command(name="refresh")
 async def refresh(ctx, name):
     if name:
+        await ctx.respond('Refreshing...')
         session = Session()
         games = session.query(Game) \
             .filter(Game.name.contains(name)) \
