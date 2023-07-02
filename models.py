@@ -82,8 +82,8 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            if self.status == 'unknown':
-                game_info = soup.find_all(".game_info_panel_widget a", href=True)
+            if self.status != 'Released':
+                game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
                 if game_info:
                     self.status = game_info[0].text
             devlog = soup.find("section", id="devlog")
@@ -100,7 +100,7 @@ class Game(Base):
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Tags') > -1:
-                    self.tags = tr.text.lstrip('Tags')
+                    self.tags = tr.text.lstrip()
 
     def refresh_version(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
