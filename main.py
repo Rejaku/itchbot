@@ -98,14 +98,7 @@ async def refresh(ctx, name):
                 game.refresh_version(ITCH_API_KEY)
                 session.commit()
                 time.sleep(5)
-            result = f'Found {matches} matches for "{name}":\n'
-            refreshedgames = session.query(Game) \
-                .filter(Game.name.contains(name)) \
-                .all()
-            for refreshedgame in refreshedgames:
-                result += f'{refreshedgame.name}, Latest Version: {refreshedgame.latest_version}, ' \
-                          f'Last Updated At: <t:{refreshedgame.updated_at}:f> <{refreshedgame.url}>\n'
-            await ctx.followup.send(result)
+            await ctx.followup.send(f'Refreshed {matches} matches for "{name}"')
         else:
             await ctx.followup.send(f'Found no matches for "{name}"')
         session.close()
