@@ -86,7 +86,7 @@ async def unsubscribe(ctx):
 @bot.slash_command(name="refresh")
 async def refresh(ctx, name):
     if name:
-        await ctx.respond('Refreshing...')
+        await ctx.defer()
         session = Session()
         games = session.query(Game) \
             .filter(Game.name.contains(name)) \
@@ -101,12 +101,13 @@ async def refresh(ctx, name):
             await search(ctx, name)
         session.close()
     else:
-        await ctx.respond(f'Found no matches for "{name}"')
+        await ctx.followup.send(f'Found no matches for "{name}"')
 
 
 @bot.slash_command(name="search")
 async def search(ctx, name):
     if name:
+        await ctx.defer()
         session = Session()
         games = session.query(Game) \
             .filter(Game.name.contains(name)) \
@@ -116,7 +117,7 @@ async def search(ctx, name):
             result = f'Found {matches} matches for "{name}":\n'
             for game in games:
                 if len(result) > 1600:
-                    await ctx.respond(result.strip())
+                    await ctx.send(result.strip())
                     result = ''
                 result += f'{game.name}, Latest Version: {game.latest_version}, ' \
                           f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
@@ -125,7 +126,7 @@ async def search(ctx, name):
         session.close()
     else:
         result = 'Usage: <command> <search term>'
-    await ctx.respond(result.strip())
+    await ctx.followup.send(result.strip())
 
 
 bot.run(DISCORD_API_KEY)
