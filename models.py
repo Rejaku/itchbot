@@ -157,10 +157,7 @@ class Game(Base):
                         # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                         matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
                         if matches:
-                            version = matches.group(0).rstrip('.')
-                        else:
-                            version = 'unknown'
-                        self.latest_version = version
+                            self.latest_version = matches.group(0).rstrip('.')
                         self.updated_at = timestamp
                     if upload['type'] == 'html':
                         self.platform_web = 1

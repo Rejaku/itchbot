@@ -57,7 +57,6 @@
             {id: 'platform_mac', name: 'Mac'},
             {id: 'platform_android', name: 'Android'},
             {id: 'platform_web', name: 'Web'},
-            {id: 'tags', name: 'Tags', sort: false},
             {id: 'status', name: 'Status', sort: false},
         ],
         server: {
@@ -80,7 +79,7 @@
                 url: (prev, columns) => {
                     const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description',
                         'latest_version', 'rating', 'updated_at', 'languages', 'platform_windows', 'platform_linux',
-                        'platform_mac', 'platform_android', 'platform_web', 'tags', 'status'];
+                        'platform_mac', 'platform_android', 'platform_web', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
