@@ -51,8 +51,9 @@
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
+            {id: 'languages', name: 'Languages', sort: false},
             {id: 'tags', name: 'Tags', sort: false},
-            {id: 'status', name: 'Status'},
+            {id: 'status', name: 'Status', sort: false},
         ],
         server: {
             url: '/api/data',
@@ -72,7 +73,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'tags', 'status'];
+                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'languages', 'tags', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },

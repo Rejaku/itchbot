@@ -34,6 +34,7 @@ class Game(Base):
     latest_version = Column(String(20))
     devlog = Column(String(250))
     tags = Column(String(250))
+    languages = Column(String(250))
     rating = Column(Float)
     rating_count = Column(Integer)
     status = Column(String(50))
@@ -41,7 +42,8 @@ class Game(Base):
     updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
-                 tags=None, rating=None, rating_count=None, status='unknown', created_at=0, updated_at=0):
+                 tags=None, languages=None, rating=None, rating_count=None, status='In development', created_at=0,
+                 updated_at=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -51,6 +53,7 @@ class Game(Base):
         self.latest_version = latest_version
         self.devlog = devlog
         self.tags = tags
+        self.languages = languages
         self.rating = rating
         self.rating_count = rating_count
         self.status = status
@@ -69,6 +72,7 @@ class Game(Base):
             'latest_version': self.latest_version,
             'devlog': self.devlog,
             'tags': self.tags,
+            'languages': self.languages,
             'rating': self.rating,
             'rating_count': self.rating_count,
             'status': self.status,
@@ -82,7 +86,7 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            if self.status != 'Released':
+            if self.status == 'In development' or self.status == 'On hold':
                 game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
                 if game_info:
                     self.status = game_info[0].text
@@ -99,8 +103,10 @@ class Game(Base):
                     self.rating_count = json_content['aggregateRating'].get('ratingCount')
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
+                if tr.text.find('Languages') > -1:
+                    self.languages = tr.text.strip()[10:]
                 if tr.text.find('Tags') > -1:
-                    self.tags = tr.text.lstrip()
+                    self.tags = tr.text.strip()[4:]
 
     def refresh_version(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
