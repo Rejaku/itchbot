@@ -156,7 +156,10 @@ class Game(Base):
                                 else:
                                     continue
                             else:
-                                version_number_string = upload[version_number_source]
+                                if upload.get(version_number_source):
+                                    version_number_string = upload[version_number_source]
+                                else:
+                                    continue
                         # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                         matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                         if matches:
