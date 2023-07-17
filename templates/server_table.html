@@ -25,6 +25,11 @@
             {id: 'url', name: 'URL', sort: false, hidden: true},
             {id: 'devlog', name: 'Devlog', sort: false, hidden: true},
             {id: 'rating_count', name: 'Rating Count', sort: false, hidden: true},
+            {id: 'platform_windows', name: 'Windows', sort: false, hidden: true},
+            {id: 'platform_linux', name: 'Linux', sort: false, hidden: true},
+            {id: 'platform_mac', name: 'Mac', sort: false, hidden: true},
+            {id: 'platform_android', name: 'Android', sort: false, hidden: true},
+            {id: 'platform_web', name: 'Web', sort: false, hidden: true},
             {
                 id: 'name', name: 'Name', formatter: (cell, row) => {
                     return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
@@ -52,11 +57,27 @@
                 }
             },
             {id: 'languages', name: 'Languages', sort: false},
-            {id: 'platform_windows', name: 'Windows'},
-            {id: 'platform_linux', name: 'Linux'},
-            {id: 'platform_mac', name: 'Mac'},
-            {id: 'platform_android', name: 'Android'},
-            {id: 'platform_web', name: 'Web'},
+            {
+                id: 'platforms', name: 'Platforms', formatter: (cell, row) => {
+                    const platforms = [];
+                    if (row.cells[3].data) {
+                        platforms.push('Windows');
+                    }
+                    if (row.cells[4].data) {
+                        platforms.push('Linux');
+                    }
+                    if (row.cells[5].data) {
+                        platforms.push('Mac');
+                    }
+                    if (row.cells[6].data) {
+                        platforms.push('Android');
+                    }
+                    if (row.cells[7].data) {
+                        platforms.push('Web');
+                    }
+                    return platforms.join(', ');
+                }
+            },
             {id: 'status', name: 'Status', sort: false},
         ],
         server: {
@@ -77,9 +98,9 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description',
-                        'latest_version', 'rating', 'updated_at', 'languages', 'platform_windows', 'platform_linux',
-                        'platform_mac', 'platform_android', 'platform_web', 'status'];
+                    const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
+                        'platform_mac', 'platform_android', 'platform_web', 'name', 'thumb_url', 'description',
+                        'latest_version', 'rating', 'updated_at', 'languages', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
