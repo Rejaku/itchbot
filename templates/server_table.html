@@ -52,6 +52,11 @@
                 }
             },
             {id: 'languages', name: 'Languages', sort: false},
+            {id: 'platform_windows', name: 'Windows'},
+            {id: 'platform_linux', name: 'Linux'},
+            {id: 'platform_mac', name: 'Mac'},
+            {id: 'platform_android', name: 'Android'},
+            {id: 'platform_web', name: 'Web'},
             {id: 'tags', name: 'Tags', sort: false},
             {id: 'status', name: 'Status', sort: false},
         ],
@@ -73,7 +78,9 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at', 'languages', 'tags', 'status'];
+                    const columnIds = ['url', 'devlog', 'rating_count', 'name', 'thumb_url', 'description',
+                        'latest_version', 'rating', 'updated_at', 'languages', 'platform_windows', 'platform_linux',
+                        'platform_mac', 'platform_android', 'platform_web', 'tags', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },

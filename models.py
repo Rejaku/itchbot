@@ -38,12 +38,18 @@ class Game(Base):
     rating = Column(Float)
     rating_count = Column(Integer)
     status = Column(String(50))
+    platform_windows = Column(Integer, nullable=False, default=0)
+    platform_linux = Column(Integer, nullable=False, default=0)
+    platform_mac = Column(Integer, nullable=False, default=0)
+    platform_android = Column(Integer, nullable=False, default=0)
+    platform_web = Column(Integer, nullable=False, default=0)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
-                 tags=None, languages=None, rating=None, rating_count=None, status='In development', created_at=0,
-                 updated_at=0):
+                 tags=None, languages=None, rating=None, rating_count=None, status='In development',
+                 platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
+                 created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -57,6 +63,11 @@ class Game(Base):
         self.rating = rating
         self.rating_count = rating_count
         self.status = status
+        self.platform_windows = platform_windows
+        self.platform_linux = platform_linux
+        self.platform_mac = platform_mac
+        self.platform_android = platform_android
+        self.platform_web = platform_web
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -76,6 +87,11 @@ class Game(Base):
             'rating': self.rating,
             'rating_count': self.rating_count,
             'status': self.status,
+            'platform_windows': self.platform_windows,
+            'platform_linux': self.platform_linux,
+            'platform_mac': self.platform_mac,
+            'platform_android': self.platform_android,
+            'platform_web': self.platform_web,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -104,7 +120,7 @@ class Game(Base):
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Languages') > -1:
-                    self.languages = tr.text.strip()[10:]
+                    self.languages = tr.text.strip()[9:]
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
 
@@ -114,26 +130,40 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             uploads = json.load(url)
             if uploads['uploads']:
+                self.platform_windows = 0
+                self.platform_linux = 0
+                self.platform_mac = 0
+                self.platform_android = 0
+                self.platform_web = 0
                 for upload in uploads['uploads']:
-                    if not upload['traits'] or 'p_android' not in upload['traits']:
-                        element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                        timestamp = int(datetime.datetime.timestamp(element))
-                        # Only process if the timestamp differs from already stored info
-                        if self.updated_at != timestamp:
-                            # Most projects just put the version number into the filename, so extract from there
-                            version_number_source = upload['filename']
-                            # A few use the version number field in itch.io, prefer that, if set
-                            if upload.get('build') and upload['build'].get('user_version'):
-                                version_number_source = upload['build']['user_version']
-                            # Extract version number from source string, matches anything from 1 to 1.2.3.4...
-                            matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
-                            if matches:
-                                version = matches.group(0).rstrip('.')
-                            else:
-                                version = 'unknown'
-                            self.latest_version = version
-                            self.updated_at = timestamp
-                        break
+                    if upload['traits']:
+                        if 'p_windows' in upload['traits']:
+                            self.platform_windows = 1
+                        if 'p_linux' in upload['traits']:
+                            self.platform_linux = 1
+                        if 'p_osx' in upload['traits']:
+                            self.platform_mac = 1
+                        if 'p_android' in upload['traits']:
+                            self.platform_android = 1
+                    element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
+                    timestamp = int(datetime.datetime.timestamp(element))
+                    # Take the newest timestamp from the uploads
+                    if self.updated_at < timestamp:
+                        # Most projects just put the version number into the filename, so extract from there
+                        version_number_source = upload['filename']
+                        # A few use the version number field in itch.io, prefer that, if set
+                        if upload.get('build') and upload['build'].get('user_version'):
+                            version_number_source = upload['build']['user_version']
+                        # Extract version number from source string, matches anything from 1 to 1.2.3.4...
+                        matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_source)
+                        if matches:
+                            version = matches.group(0).rstrip('.')
+                        else:
+                            version = 'unknown'
+                        self.latest_version = version
+                        self.updated_at = timestamp
+                    if upload['type'] == 'html':
+                        self.platform_web = 1
 
 
 class User(Base):
