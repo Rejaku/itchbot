@@ -98,7 +98,7 @@ def api_data_route():
     total = games.count()
 
     # sorting
-    sort = request.args.get('sort') or '+name'
+    sort = request.args.get('sort') or '-updated_at'
     if sort:
         order = []
         for s in sort.split(','):
