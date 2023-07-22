@@ -150,21 +150,17 @@ class Game(Base):
                     # Take the newest timestamp from the uploads
                     if self.updated_at < timestamp:
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
-                            if version_number_source == 'build.user_version':
-                                if upload.get('build') and upload['build'].get('user_version'):
-                                    version_number_string = upload['build']['user_version']
-                                else:
-                                    continue
-                            else:
-                                if upload.get(version_number_source):
-                                    version_number_string = upload[version_number_source]
-                                else:
-                                    continue
-                        # Extract version number from source string, matches anything from 1 to 1.2.3.4...
-                        matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
-                        if matches:
-                            self.latest_version = matches.group(0).rstrip('.')
-                        self.updated_at = timestamp
+                            self.updated_at = timestamp
+                            if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
+                                self.latest_version = upload['build']['user_version']
+                                break
+                            elif upload.get(version_number_source):
+                                version_number_string = upload[version_number_source]
+                                # Extract version number from source string, matches anything from 1 to 1.2.3.4...
+                                matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
+                                if matches:
+                                    self.latest_version = matches.group(0).rstrip('.')
+                                    break
                     if upload['type'] == 'html':
                         self.platform_web = 1
 
