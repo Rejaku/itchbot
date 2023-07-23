@@ -71,4 +71,4 @@ init python:
         f.close()
 
     wordcounter()
-    exit()
+    renpy.quit()
