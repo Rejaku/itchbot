@@ -201,6 +201,14 @@ class Game(Base):
                 download_path = 'tmp/' + upload_info['filename']
                 urllib.request.urlretrieve(download['url'], download_path)
                 extract_directory = f'tmp/{upload_info["id"]}'
+                if download_path.endswith('.zip'):
+                    try:
+                        with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                            zip_ref.extractall(extract_directory)
+                    except zipfile.BadZipfile:
+                        base = os.path.splitext(download_path)[0]
+                        os.rename(download_path, base + '.tar.bz2')
+                        download_path = base + '.tar.bz2'
                 if download_path.endswith('.tar.gz'):
                     file = tarfile.open(download_path)
                     file.extractall(extract_directory)
@@ -209,9 +217,6 @@ class Game(Base):
                     file = tarfile.open(download_path, "r:bz2")
                     file.extractall(extract_directory)
                     file.close()
-                elif download_path.endswith('.zip'):
-                    with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                        zip_ref.extractall(extract_directory)
                 directory_listing = os.listdir(extract_directory)
                 game_dir = []
                 if len(directory_listing) == 1:
