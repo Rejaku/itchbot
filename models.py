@@ -152,8 +152,8 @@ class Game(Base):
                 self.platform_mac = 0
                 self.platform_android = 0
                 self.platform_web = 0
+                linux_upload = None
                 for upload in uploads['uploads']:
-                    linux_upload = None
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
                             self.platform_windows = 1
@@ -164,6 +164,7 @@ class Game(Base):
                             self.platform_mac = 1
                         if 'p_android' in upload['traits']:
                             self.platform_android = 1
+                for upload in uploads['uploads']:
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                     timestamp = int(datetime.datetime.timestamp(element))
                     # Take the newest timestamp from the uploads
