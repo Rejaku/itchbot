@@ -9,6 +9,7 @@ import urllib.request
 import zipfile
 import tarfile
 import shutil
+import stat
 
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -220,6 +221,8 @@ class Game(Base):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
                     for game_dir_file in game_dir_files:
                         if game_dir_file.endswith('.sh'):
+                            st = os.stat(game_dir + '/' + game_dir_file)
+                            os.chmod(game_dir + '/' + game_dir_file, st.st_mode | stat.S_IEXEC)
                             subprocess.run(directory_listing[0] + '/' + game_dir_file,
                                            cwd=extract_directory, shell=True)
                             if os.path.isfile(extract_directory + '/stats.json'):
