@@ -30,6 +30,8 @@
             {id: 'platform_mac', name: 'Mac', sort: false, hidden: true},
             {id: 'platform_android', name: 'Android', sort: false, hidden: true},
             {id: 'platform_web', name: 'Web', sort: false, hidden: true},
+            {id: 'stats_blocks', name: 'Blocks', sort: false, hidden: true},
+            {id: 'stats_options', name: 'Options', sort: false, hidden: true},
             {
                 id: 'name', name: 'Name', formatter: (cell, row) => {
                     return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
@@ -56,6 +58,8 @@
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
+            {id: 'stats_menus', name: 'Menus'},
+            {id: 'stats_words', name: 'Words'},
             {id: 'languages', name: 'Languages', sort: false},
             {
                 id: 'platforms', name: 'Platforms', formatter: (cell, row) => {
@@ -99,8 +103,9 @@
             server: {
                 url: (prev, columns) => {
                     const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
-                        'platform_mac', 'platform_android', 'platform_web', 'name', 'thumb_url', 'description',
-                        'latest_version', 'rating', 'updated_at', 'languages', 'status'];
+                        'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options',
+                        'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at',
+                        'stats_menus', 'stats_words', 'languages', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
