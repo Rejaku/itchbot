@@ -2,3 +2,5 @@
 __pycache__
 .env
 VNs.db
+/tmp/*
+!/tmp/.gitkeep

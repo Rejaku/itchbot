@@ -4,7 +4,11 @@ import datetime
 import json
 import os
 import re
+import subprocess
 import urllib.request
+import zipfile
+import tarfile
+import shutil
 
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -43,12 +47,17 @@ class Game(Base):
     platform_mac = Column(Integer, nullable=False, default=0)
     platform_android = Column(Integer, nullable=False, default=0)
     platform_web = Column(Integer, nullable=False, default=0)
+    stats_blocks = Column(Integer, nullable=False, default=0)
+    stats_menus = Column(Integer, nullable=False, default=0)
+    stats_options = Column(Integer, nullable=False, default=0)
+    stats_words = Column(Integer, nullable=False, default=0)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
                  platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
+                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0,
                  created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
@@ -68,6 +77,10 @@ class Game(Base):
         self.platform_mac = platform_mac
         self.platform_android = platform_android
         self.platform_web = platform_web
+        self.stats_blocks = stats_blocks
+        self.stats_menus = stats_menus
+        self.stats_options = stats_options
+        self.stats_words = stats_words
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -92,6 +105,10 @@ class Game(Base):
             'platform_mac': self.platform_mac,
             'platform_android': self.platform_android,
             'platform_web': self.platform_web,
+            'stats_blocks': self.stats_blocks,
+            'stats_menus': self.stats_menus,
+            'stats_options': self.stats_options,
+            'stats_words': self.stats_words,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -136,11 +153,13 @@ class Game(Base):
                 self.platform_android = 0
                 self.platform_web = 0
                 for upload in uploads['uploads']:
+                    linux_upload = None
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
                             self.platform_windows = 1
                         if 'p_linux' in upload['traits']:
                             self.platform_linux = 1
+                            linux_upload = upload
                         if 'p_osx' in upload['traits']:
                             self.platform_mac = 1
                         if 'p_android' in upload['traits']:
@@ -153,6 +172,8 @@ class Game(Base):
                             self.updated_at = timestamp
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
                                 self.latest_version = upload['build']['user_version']
+                                if linux_upload:
+                                    self.get_script_stats(itch_api_key, linux_upload)
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -160,10 +181,56 @@ class Game(Base):
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
                                     self.latest_version = matches.group(0).rstrip('.')
+                                    if linux_upload:
+                                        self.get_script_stats(itch_api_key, linux_upload)
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
 
+    def get_script_stats(self, itch_api_key, upload_info):
+        # Download the game
+        req_download = urllib.request.Request(
+            self.url + '/file/' + str(upload_info['id']),
+            method='POST'
+        )
+        req_download.add_header('Authorization', itch_api_key)
+        with urllib.request.urlopen(req_download) as download_url:
+            download = json.load(download_url)
+            if download['url']:
+                download_path = 'tmp/' + upload_info['filename']
+                urllib.request.urlretrieve(download['url'], download_path)
+                extract_directory = f'tmp/{upload_info["id"]}'
+                if download_path.endswith('.tar.gz'):
+                    file = tarfile.open(download_path)
+                    file.extractall(extract_directory)
+                    file.close()
+                elif download_path.endswith('.tar.bz2'):
+                    file = tarfile.open(download_path, "r:bz2")
+                    file.extractall(extract_directory)
+                    file.close()
+                elif download_path.endswith('.zip'):
+                    with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_directory)
+                directory_listing = os.listdir(extract_directory)
+                game_dir = []
+                if len(directory_listing) == 1:
+                    game_dir = extract_directory + '/' + directory_listing[0]
+                    game_dir_files = os.listdir(game_dir)
+                if len(game_dir_files) > 0:
+                    shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
+                    for game_dir_file in game_dir_files:
+                        if game_dir_file.endswith('.sh'):
+                            subprocess.run(directory_listing[0] + '/' + game_dir_file,
+                                           cwd=extract_directory, shell=True)
+                            if os.path.isfile(extract_directory + '/stats.json'):
+                                stats_file = open(extract_directory + '/stats.json')
+                                stats = json.load(stats_file)
+                                stats_file.close()
+                                self.stats_blocks = stats['blocks']
+                                self.stats_menus = stats['menus']
+                                self.stats_options = stats['options']
+                                self.stats_words = stats['words']
+                                shutil.rmtree(game_dir)
 
 class User(Base):
     __tablename__ = 'users'
