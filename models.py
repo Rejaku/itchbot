@@ -233,6 +233,7 @@ class Game(Base):
                                 self.stats_menus = stats['menus']
                                 self.stats_options = stats['options']
                                 self.stats_words = stats['words']
+                                os.remove(download_path)
                                 shutil.rmtree(game_dir)
 
 class User(Base):
