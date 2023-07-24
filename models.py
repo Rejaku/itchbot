@@ -13,6 +13,7 @@ import shutil
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
+from shlex import quote
 
 engine = create_engine(
     f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
@@ -226,9 +227,9 @@ class Game(Base):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
                     for game_dir_file in game_dir_files:
                         if game_dir_file.endswith('.sh'):
-                            subprocess.run(f'chmod -R +x {directory_listing[0]}',
+                            subprocess.run(f'chmod -R +x {quote(directory_listing[0])}',
                                            cwd=extract_directory, shell=True)
-                            subprocess.run(directory_listing[0] + '/' + game_dir_file,
+                            subprocess.run(f'{quote(directory_listing[0])}/{quote(game_dir_file)}',
                                            cwd=extract_directory, shell=True)
                             if os.path.isfile(extract_directory + '/stats.json'):
                                 stats_file = open(extract_directory + '/stats.json')
