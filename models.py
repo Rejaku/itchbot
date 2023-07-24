@@ -220,6 +220,7 @@ class Game(Base):
                     file.close()
                 directory_listing = os.listdir(extract_directory)
                 game_dir = []
+                game_dir_files = []
                 if len(directory_listing) == 1:
                     game_dir = extract_directory + '/' + directory_listing[0]
                     game_dir_files = os.listdir(game_dir)
