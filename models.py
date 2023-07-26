@@ -176,6 +176,7 @@ class Game(Base):
                                 self.latest_version = upload['build']['user_version']
                                 if linux_upload:
                                     self.get_script_stats(itch_api_key, linux_upload)
+                                    linux_upload = None
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -185,6 +186,7 @@ class Game(Base):
                                     self.latest_version = matches.group(0).rstrip('.')
                                     if linux_upload:
                                         self.get_script_stats(itch_api_key, linux_upload)
+                                        linux_upload = None
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
