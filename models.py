@@ -9,6 +9,7 @@ import urllib.request
 import zipfile
 import tarfile
 import shutil
+from urllib.error import ContentTooShortError
 
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -202,7 +203,11 @@ class Game(Base):
             download = json.load(download_url)
             if download['url']:
                 download_path = 'tmp/' + upload_info['filename']
-                urllib.request.urlretrieve(download['url'], download_path)
+                try:
+                    urllib.request.urlretrieve(download['url'], download_path)
+                except ContentTooShortError:
+                    shutil.rmtree(download_path)
+                    return
                 extract_directory = f'tmp/{upload_info["id"]}'
                 if download_path.endswith('.zip'):
                     try:
