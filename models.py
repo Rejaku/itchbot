@@ -225,7 +225,8 @@ class Game(Base):
                 game_dir_files = []
                 if len(directory_listing) == 1:
                     game_dir = extract_directory + '/' + quote(directory_listing[0])
-                    game_dir_files = os.listdir(game_dir)
+                    if os.path.isdir(game_dir):
+                        game_dir_files = os.listdir(game_dir)
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
                     for game_dir_file in game_dir_files:
