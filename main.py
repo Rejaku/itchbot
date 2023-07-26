@@ -88,7 +88,7 @@ async def refresh(ctx, name):
     if name:
         session = Session()
         games = session.query(Game) \
-            .filter(Game.status == 'In development', Game.name.contains(name)) \
+            .filter(Game.name.contains(name)) \
             .all()
         matches = len(games)
         if matches:
