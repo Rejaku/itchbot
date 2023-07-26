@@ -58,8 +58,16 @@
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
-            {id: 'stats_menus', name: 'Menus'},
-            {id: 'stats_words', name: 'Words'},
+            {
+                id: 'stats_menus', name: 'Menus', formatter: (cell) => {
+                    return cell ? cell.toLocaleString() : '';
+                }
+            },
+            {
+                id: 'stats_words', name: 'Words', formatter: (cell) => {
+                    return cell ? cell.toLocaleString() : '';
+                }
+            },
             {id: 'languages', name: 'Languages', sort: false},
             {
                 id: 'platforms', name: 'Platforms', formatter: (cell, row) => {
