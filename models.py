@@ -220,9 +220,11 @@ class Game(Base):
                     file = tarfile.open(download_path, "r:bz2")
                     file.extractall(extract_directory)
                     file.close()
-                directory_listing = os.listdir(extract_directory)
+                directory_listing = []
                 game_dir = []
                 game_dir_files = []
+                if os.path.isdir(extract_directory):
+                    directory_listing = os.listdir(extract_directory)
                 if len(directory_listing) == 1:
                     game_dir = extract_directory + '/' + quote(directory_listing[0])
                     if os.path.isdir(game_dir):
