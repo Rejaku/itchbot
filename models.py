@@ -222,7 +222,11 @@ class Game(Base):
                     file.extractall(extract_directory)
                     file.close()
                 elif download_path.endswith('.tar.bz2'):
-                    file = tarfile.open(download_path, "r:bz2")
+                    try:
+                        file = tarfile.open(download_path, "r:bz2")
+                    except tarfile.ReadError:
+                        shutil.rmtree(download_path)
+                        return
                     file.extractall(extract_directory)
                     file.close()
                 directory_listing = []
