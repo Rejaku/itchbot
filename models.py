@@ -244,7 +244,8 @@ class Game(Base):
                                 self.stats_options = stats['options']
                                 self.stats_words = stats['words']
                                 os.remove(download_path)
-                                shutil.rmtree(game_dir)
+                if os.path.isdir(extract_directory):
+                    shutil.rmtree(extract_directory)
 
 class User(Base):
     __tablename__ = 'users'
