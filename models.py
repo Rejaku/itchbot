@@ -206,7 +206,8 @@ class Game(Base):
                 try:
                     urllib.request.urlretrieve(download['url'], download_path)
                 except ContentTooShortError:
-                    shutil.rmtree(download_path)
+                    if os.path.isfile(download_path):
+                        shutil.rmtree(download_path)
                     return
                 extract_directory = f'tmp/{upload_info["id"]}'
                 if download_path.endswith('.zip'):
@@ -225,7 +226,8 @@ class Game(Base):
                     try:
                         file = tarfile.open(download_path, "r:bz2")
                     except tarfile.ReadError:
-                        shutil.rmtree(download_path)
+                        if os.path.isfile(download_path):
+                            shutil.rmtree(download_path)
                         return
                     file.extractall(extract_directory)
                     file.close()
