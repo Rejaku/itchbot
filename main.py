@@ -88,7 +88,7 @@ async def refresh(ctx, name):
     if name:
         session = Session()
         games = session.query(Game) \
-            .filter(Game.name.contains(name)) \
+            .filter(Game.stats_words == 0, Game.platform_linux == 1, Game.name.contains(name)) \
             .all()
         matches = len(games)
         if matches:
