@@ -251,7 +251,7 @@ class Game(Base):
                         if game_dir_file.endswith('.sh'):
                             subprocess.run(f'chmod -R +x {quote(directory_listing[0])}',
                                            cwd=extract_directory, shell=True)
-                            subprocess.run(f'{quote(directory_listing[0])}/{quote(game_dir_file)}',
+                            subprocess.run(f'{quote(directory_listing[0])}/{quote(game_dir_file)} game test',
                                            cwd=extract_directory, shell=True)
                             if os.path.isfile(extract_directory + '/stats.json'):
                                 stats_file = open(extract_directory + '/stats.json')
