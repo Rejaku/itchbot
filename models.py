@@ -169,14 +169,17 @@ class Game(Base):
                             self.platform_mac = 1
                         if 'p_android' in upload['traits']:
                             self.platform_android = 1
+                latest_timestamp = 0
                 for upload in uploads['uploads']:
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                     timestamp = int(datetime.datetime.timestamp(element))
+                    if latest_timestamp < timestamp:
+                        latest_timestamp = timestamp
                     # Take the newest timestamp from the uploads
                     if self.updated_at < timestamp:
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
-                            self.updated_at = timestamp
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
+                                self.updated_at = timestamp
                                 self.latest_version = upload['build']['user_version']
                                 if linux_upload:
                                     self.get_script_stats(itch_api_key, linux_upload)
@@ -187,6 +190,7 @@ class Game(Base):
                                 # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
+                                    self.updated_at = timestamp
                                     self.latest_version = matches.group(0).rstrip('.')
                                     if linux_upload:
                                         self.get_script_stats(itch_api_key, linux_upload)
@@ -194,6 +198,7 @@ class Game(Base):
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
+                self.updated_at = latest_timestamp
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
@@ -213,7 +218,7 @@ class Game(Base):
                     urllib.request.urlretrieve(download['url'], download_path)
                 except (ContentTooShortError, HTTPError):
                     if os.path.isfile(download_path):
-                        shutil.rmtree(download_path)
+                        os.remove(download_path)
                     return
                 extract_directory = f'tmp/{upload_info["id"]}'
                 if download_path.endswith('.zip'):
