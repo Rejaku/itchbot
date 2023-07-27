@@ -219,7 +219,12 @@ class Game(Base):
                         os.rename(download_path, base + '.tar.bz2')
                         download_path = base + '.tar.bz2'
                 if download_path.endswith('.tar.gz'):
-                    file = tarfile.open(download_path)
+                    try:
+                        file = tarfile.open(download_path)
+                    except tarfile.ReadError:
+                        if os.path.isfile(download_path):
+                            os.remove(download_path)
+                        return
                     file.extractall(extract_directory)
                     file.close()
                 elif download_path.endswith('.tar.bz2'):
@@ -227,7 +232,7 @@ class Game(Base):
                         file = tarfile.open(download_path, "r:bz2")
                     except tarfile.ReadError:
                         if os.path.isfile(download_path):
-                            shutil.rmtree(download_path)
+                            os.remove(download_path)
                         return
                     file.extractall(extract_directory)
                     file.close()
