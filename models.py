@@ -16,13 +16,13 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
 from shlex import quote
 
-engine = create_engine(
+db_engine = create_engine(
     f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
     pool_pre_ping=True,
     pool_recycle=1800,
     echo=True
 )
-Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind=db_engine)
 
 Base = declarative_base()
 
@@ -53,13 +53,14 @@ class Game(Base):
     stats_menus = Column(Integer, nullable=False, default=0)
     stats_options = Column(Integer, nullable=False, default=0)
     stats_words = Column(Integer, nullable=False, default=0)
+    engine = Column(String(50))
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
                  platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
-                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0,
+                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, engine='unknown',
                  created_at=0, updated_at=0):
         self.service = service
         self.game_id = game_id
@@ -83,6 +84,7 @@ class Game(Base):
         self.stats_menus = stats_menus
         self.stats_options = stats_options
         self.stats_words = stats_words
+        self.engine = engine
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -111,6 +113,7 @@ class Game(Base):
             'stats_menus': self.stats_menus,
             'stats_options': self.stats_options,
             'stats_words': self.stats_words,
+            'engine': self.engine,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -193,6 +196,9 @@ class Game(Base):
                         self.platform_web = 1
 
     def get_script_stats(self, itch_api_key, upload_info):
+        # Only continue if the game is made with Ren'Py or unknown
+        if self.engine != "Ren'Py" and self.engine != "unknown":
+            return
         # Download the game
         req_download = urllib.request.Request(
             self.url + '/file/' + str(upload_info['id']),
@@ -261,6 +267,7 @@ class Game(Base):
                                 self.stats_menus = stats['menus']
                                 self.stats_options = stats['options']
                                 self.stats_words = stats['words']
+                                self.engine = "Ren'Py"
                                 os.remove(download_path)
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
