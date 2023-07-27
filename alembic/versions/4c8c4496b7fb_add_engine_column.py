@@ -17,8 +17,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('games', Column('engine', String(50)))
+    op.add_column('games', Column('game_engine', String(50)))
 
 
 def downgrade() -> None:
-    op.drop_column('games', 'engine')
+    op.drop_column('games', 'game_engine')
