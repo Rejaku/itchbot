@@ -11,9 +11,10 @@ define script_folder_path = ""
 ### The Code ##################################################################################################
 ###############################################################################################################
 
-init python:
+init -10000 python:
 
     import collections
+    import io
     import json
 
     class Count(object):
@@ -66,9 +67,8 @@ init python:
             "words": words
         }
 
-        f = open("stats.json", "w", encoding="utf-8")
-        f.write(unicode(json.dumps(report, indent=4, sort_keys=True, ensure_ascii=False)))
-        f.close()
+        with io.open("stats.json", "w", encoding="utf-8") as outfile:
+            outfile.write(unicode(json.dumps(report, indent=4, sort_keys=True, ensure_ascii=False)))
 
     wordcounter()
     renpy.quit()
