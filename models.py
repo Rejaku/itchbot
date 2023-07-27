@@ -9,7 +9,7 @@ import urllib.request
 import zipfile
 import tarfile
 import shutil
-from urllib.error import ContentTooShortError
+from urllib.error import ContentTooShortError, HTTPError
 
 from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -205,7 +205,7 @@ class Game(Base):
                 download_path = 'tmp/' + upload_info['filename']
                 try:
                     urllib.request.urlretrieve(download['url'], download_path)
-                except ContentTooShortError:
+                except (ContentTooShortError, HTTPError):
                     if os.path.isfile(download_path):
                         shutil.rmtree(download_path)
                     return
