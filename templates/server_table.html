@@ -94,7 +94,7 @@
                     return platforms.join(', ');
                 }, sort: false
             },
-            {id: 'engine', name: 'Engine'},
+            {id: 'game_engine', name: 'Engine'},
             {id: 'status', name: 'Status'},
         ],
         server: {
@@ -118,7 +118,7 @@
                     const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
                         'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options',
                         'name', 'thumb_url', 'description', 'latest_version', 'rating', 'updated_at',
-                        'stats_menus', 'stats_words', 'languages', 'platforms', 'engine', 'status'];
+                        'stats_menus', 'stats_words', 'languages', 'platforms', 'game_engine', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
