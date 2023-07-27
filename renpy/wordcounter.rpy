@@ -67,7 +67,7 @@ init python:
         }
 
         f = open("stats.json", "w", encoding="utf-8")
-        f.write(unicode(json.dumps(report, indent=4, sort_keys=True, ensure_ascii=False))
+        f.write(unicode(json.dumps(report, indent=4, sort_keys=True, ensure_ascii=False)))
         f.close()
 
     wordcounter()
