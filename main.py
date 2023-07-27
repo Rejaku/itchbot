@@ -22,7 +22,8 @@ bot = commands.Bot()
 @bot.event
 async def on_ready():
     print('Bot is ready')
-    notify_about_updates.start()
+    if not notify_about_updates.is_running():
+        notify_about_updates.start()
 
 
 @tasks.loop(minutes=30)
@@ -88,7 +89,7 @@ async def refresh(ctx, name):
     if name:
         session = Session()
         games = session.query(Game) \
-            .filter(Game.stats_words == 0, Game.platform_linux == 1, Game.name.contains(name)) \
+            .filter(Game.status == 'In development', Game.name.contains(name)) \
             .all()
         matches = len(games)
         if matches:
