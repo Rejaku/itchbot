@@ -2,7 +2,6 @@ alembic
 bs4
 flake8
 Flask
-Flask-Discord
 mypy
 py-cord
 pymysql

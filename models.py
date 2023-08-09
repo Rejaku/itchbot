@@ -124,7 +124,7 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            if self.status == 'In development' or self.status == 'On hold':
+            if self.status != 'Abandoned' and self.status != 'Canceled':
                 game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
                 if game_info:
                     self.status = game_info[0].text

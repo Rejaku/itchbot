@@ -31,7 +31,7 @@ def refresh_version(itch_api_key):
     print('[refresh_version] Start')
     session = Session()
     games = session.query(Game) \
-        .filter(Game.status == 'In development') \
+        .filter(Game.status != 'Abandoned', Game.status != 'Canceled') \
         .all()
     for game in games:
         game.refresh_version(itch_api_key)
