@@ -204,6 +204,11 @@ class Game(Base):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
             return
+        # Reset status to 0
+        self.stats_blocks = 0
+        self.stats_menus = 0
+        self.stats_options = 0
+        self.stats_words = 0
         # Download the game
         req_download = urllib.request.Request(
             self.url + '/file/' + str(upload_info['id']),
