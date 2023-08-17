@@ -225,7 +225,7 @@ class Game(Base):
                     try:
                         with zipfile.ZipFile(download_path, 'r') as zip_ref:
                             zip_ref.extractall(extract_directory)
-                    except [zipfile.BadZipfile, EOFError]:
+                    except (zipfile.BadZipfile, IOError, EOFError) as error:
                         base = os.path.splitext(download_path)[0]
                         os.rename(download_path, base + '.tar.bz2')
                         download_path = base + '.tar.bz2'
@@ -234,7 +234,7 @@ class Game(Base):
                         file = tarfile.open(download_path)
                         file.extractall(extract_directory)
                         file.close()
-                    except [tarfile.ReadError, EOFError]:
+                    except (tarfile.ReadError, IOError, EOFError) as error:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
                         return
@@ -243,7 +243,7 @@ class Game(Base):
                         file = tarfile.open(download_path, "r:bz2")
                         file.extractall(extract_directory)
                         file.close()
-                    except [tarfile.ReadError, EOFError]:
+                    except (tarfile.ReadError, IOError, EOFError) as error:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
                         return
