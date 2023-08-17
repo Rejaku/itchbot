@@ -232,21 +232,21 @@ class Game(Base):
                 if download_path.endswith('.tar.gz'):
                     try:
                         file = tarfile.open(download_path)
+                        file.extractall(extract_directory)
+                        file.close()
                     except [tarfile.ReadError, EOFError]:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
                         return
-                    file.extractall(extract_directory)
-                    file.close()
                 elif download_path.endswith('.tar.bz2'):
                     try:
                         file = tarfile.open(download_path, "r:bz2")
+                        file.extractall(extract_directory)
+                        file.close()
                     except [tarfile.ReadError, EOFError]:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
                         return
-                    file.extractall(extract_directory)
-                    file.close()
                 directory_listing = []
                 game_dir = []
                 game_dir_files = []
