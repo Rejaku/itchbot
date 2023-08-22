@@ -85,7 +85,7 @@ async def unsubscribe(ctx):
 
 
 @bot.slash_command(name="refresh")
-async def refresh(ctx, name):
+async def refresh(ctx, name, refresh_tags: bool = False):
     if name:
         session = Session()
         games = session.query(Game) \
@@ -95,10 +95,11 @@ async def refresh(ctx, name):
         if matches:
             await ctx.respond(f'Refreshing {matches} matches for "{name}"')
             for game in games:
-                game.refresh_tags_and_rating(ITCH_API_KEY)
+                if refresh_tags:
+                    game.refresh_tags_and_rating(ITCH_API_KEY)
                 game.refresh_version(ITCH_API_KEY)
                 session.commit()
-                time.sleep(5)
+                time.sleep(10)
         else:
             await ctx.respond(f'Found no matches for "{name}"')
         session.close()

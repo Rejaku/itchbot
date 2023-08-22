@@ -20,7 +20,7 @@ def refresh_tags_and_rating(itch_api_key):
         for game in games:
             game.refresh_tags_and_rating(itch_api_key)
             session.commit()
-            time.sleep(5)
+            time.sleep(10)
     except RemoteDisconnected:
         pass
     session.close()
