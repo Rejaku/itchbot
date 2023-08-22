@@ -108,7 +108,7 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
-        schedule.every().hour.do(refresh_version, self.itch_api_key)
+        schedule.every(3).hours.do(refresh_version, self.itch_api_key)
         schedule.every().day.do(self.update_watchlist)
         schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
         while True:
