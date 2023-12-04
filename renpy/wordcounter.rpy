@@ -30,6 +30,7 @@ init -10000 python:
 
     # The main function
     def wordcounter():
+        language = None
 
         all_stmts = list(renpy.game.script.all_stmts)
         all_stmts.sort(key=lambda n : n.filename)
@@ -41,12 +42,17 @@ init -10000 python:
 
         for node in all_stmts:
             if isinstance(node, renpy.ast.Say):
-                filestats[node.filename].add(node.what)
+                if language is None:
+                    filestats[node.filename].add(node.what)
 
             elif isinstance(node, renpy.ast.Menu):
-                menu_count += 1
-                for l, c, b in node.items:
-                    options_count += 1
+                if language is None:
+                    menu_count += 1
+                    for l, c, b in node.items:
+                        options_count += 1
+
+            elif isinstance(node, renpy.ast.Translate):
+                language = node.language
 
         report_stats(filestats, menu_count, options_count)
 
