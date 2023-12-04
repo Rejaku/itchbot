@@ -153,7 +153,7 @@ class Game(Base):
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
             game = json.load(url)
-            if game and game['game']:
+            if 'game' in game:
                 publish_datetime = datetime.datetime.strptime(
                     game['game']['published_at'],
                     '%Y-%m-%dT%H:%M:%S.000000000Z'
@@ -166,7 +166,7 @@ class Game(Base):
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
             uploads = json.load(url)
-            if uploads and uploads['uploads']:
+            if 'uploads' in uploads:
                 self.platform_windows = 0
                 self.platform_linux = 0
                 self.platform_mac = 0
@@ -232,7 +232,7 @@ class Game(Base):
         req_download.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req_download) as download_url:
             download = json.load(download_url)
-            if download and download['url']:
+            if 'url' in download:
                 download_path = 'tmp/' + upload_info['filename']
                 try:
                     urllib.request.urlretrieve(download['url'], download_path)
