@@ -207,6 +207,8 @@ class Game(Base):
                                 self.latest_version = upload['build']['user_version']
                                 if upload is linux_upload:
                                     self.get_script_stats(itch_api_key, linux_upload)
+                                elif upload is windows_upload and linux_upload is None:
+                                    self.get_script_stats(itch_api_key, windows_upload, True)
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -217,12 +219,14 @@ class Game(Base):
                                     self.latest_version = matches.group(0).rstrip('.')
                                     if upload is linux_upload:
                                         self.get_script_stats(itch_api_key, linux_upload)
+                                    elif upload is windows_upload and linux_upload is None:
+                                        self.get_script_stats(itch_api_key, windows_upload, True)
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
                 self.updated_at = latest_timestamp
 
-    def get_script_stats(self, itch_api_key, upload_info):
+    def get_script_stats(self, itch_api_key, upload_info, windows: bool = False):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
             return
@@ -285,6 +289,13 @@ class Game(Base):
                         game_dir_files = os.listdir(game_dir)
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
+                    if windows:
+                        shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
+                        shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
+                        shutil.copytree('./renpy/py2-linux-x86_64', game_dir + '/lib/py2-linux-x86_64', dirs_exist_ok=True)
+                        shutil.copytree('./renpy/py3-linux-x86_64', game_dir + '/lib/py3-linux-x86_64', dirs_exist_ok=True)
+                        # Refresh the directory listing
+                        game_dir_files = os.listdir(game_dir)
                     for game_dir_file in game_dir_files:
                         if game_dir_file.endswith('.sh'):
                             subprocess.run(f'chmod -R +x {quote(directory_listing[0])}',
