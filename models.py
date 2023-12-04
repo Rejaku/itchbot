@@ -143,15 +143,30 @@ class Game(Base):
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Languages') > -1:
                     self.languages = tr.text.strip()[9:]
+                if tr.text.find('Published') > -1:
+                    self.created_at = tr.text.strip()[9:]
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
+
+    def refresh_base_info(self, itch_api_key):
+        req = urllib.request.Request('https://api.itch.io/games/' + self.game_id)
+        req.add_header('Authorization', itch_api_key)
+        with urllib.request.urlopen(req) as url:
+            game = json.load(url)
+            if game and game['game']:
+                publish_datetime = datetime.datetime.strptime(
+                    game['game']['published_at'],
+                    '%Y-%m-%dT%H:%M:%S.000000000Z'
+                )
+                self.created_at = publish_datetime.timestamp()
+                self.thumb_url = game['game']['cover_url']
 
     def refresh_version(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
             uploads = json.load(url)
-            if uploads['uploads']:
+            if uploads and uploads['uploads']:
                 self.platform_windows = 0
                 self.platform_linux = 0
                 self.platform_mac = 0
@@ -217,7 +232,7 @@ class Game(Base):
         req_download.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req_download) as download_url:
             download = json.load(download_url)
-            if download['url']:
+            if download and download['url']:
                 download_path = 'tmp/' + upload_info['filename']
                 try:
                     urllib.request.urlretrieve(download['url'], download_path)
@@ -273,11 +288,12 @@ class Game(Base):
                                 stats_file = open(extract_directory + '/stats.json')
                                 stats = json.load(stats_file)
                                 stats_file.close()
-                                self.stats_blocks = stats['blocks']
-                                self.stats_menus = stats['menus']
-                                self.stats_options = stats['options']
-                                self.stats_words = stats['words']
-                                self.game_engine = "Ren'Py"
+                                if stats:
+                                    self.stats_blocks = stats['blocks']
+                                    self.stats_menus = stats['menus']
+                                    self.stats_options = stats['options']
+                                    self.stats_words = stats['words']
+                                    self.game_engine = "Ren'Py"
                                 os.remove(download_path)
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
