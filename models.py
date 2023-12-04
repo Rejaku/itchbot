@@ -205,10 +205,8 @@ class Game(Base):
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
                                 self.updated_at = timestamp
                                 self.latest_version = upload['build']['user_version']
-                                if upload is linux_upload:
-                                    self.get_script_stats(itch_api_key, linux_upload)
-                                elif upload is windows_upload and linux_upload is None:
-                                    self.get_script_stats(itch_api_key, windows_upload, True)
+                                if upload is linux_upload or (upload is windows_upload and linux_upload is None):
+                                    self.get_script_stats(itch_api_key, upload)
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -217,16 +215,14 @@ class Game(Base):
                                 if matches:
                                     self.updated_at = timestamp
                                     self.latest_version = matches.group(0).rstrip('.')
-                                    if upload is linux_upload:
-                                        self.get_script_stats(itch_api_key, linux_upload)
-                                    elif upload is windows_upload and linux_upload is None:
-                                        self.get_script_stats(itch_api_key, windows_upload, True)
+                                    if upload is linux_upload or (upload is windows_upload and linux_upload is None):
+                                        self.get_script_stats(itch_api_key, upload)
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
                 self.updated_at = latest_timestamp
 
-    def get_script_stats(self, itch_api_key, upload_info, windows: bool = False):
+    def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
             return
@@ -289,7 +285,7 @@ class Game(Base):
                         game_dir_files = os.listdir(game_dir)
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
-                    if windows:
+                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(game_dir + '/lib/py3-linux-x86_64'):
                         shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
                         shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
                         shutil.copytree('./renpy/py2-linux-x86_64', game_dir + '/lib/py2-linux-x86_64', dirs_exist_ok=True)
