@@ -176,6 +176,10 @@ class Game(Base):
                 windows_upload = None
                 android_upload = None
                 for upload in uploads['uploads']:
+                    # For games that have no traits, check for a zip and assume Windows
+                    if windows_upload is None and 'filename' in upload and upload['filename'].endswith('.zip'):
+                        self.platform_windows = 1
+                        windows_upload = upload
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
                             self.platform_windows = 1
@@ -190,7 +194,7 @@ class Game(Base):
                             android_upload = upload
                 latest_timestamp = 0
                 # Force update check by setting updated_at to 0
-                if force and (linux_upload or windows_upload or android_upload):
+                if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
                     self.updated_at = 0
                 for upload in [linux_upload, windows_upload, android_upload]:
                     if upload is None:
