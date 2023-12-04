@@ -289,7 +289,7 @@ class Game(Base):
                         game_dir_files = os.listdir(game_dir)
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
-                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(game_dir + '/lib/py3-linux-x86_64'):
+                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(game_dir + '/lib/py3-linux-x86_64') and not os.path.isdir(game_dir + '/lib/linux-x86_64'):
                         shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
                         shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
                         shutil.copytree('./renpy/py2-linux-x86_64', game_dir + '/lib/py2-linux-x86_64', dirs_exist_ok=True)
