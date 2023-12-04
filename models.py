@@ -118,13 +118,13 @@ class Game(Base):
             'updated_at': self.updated_at
         }
 
-    def refresh_tags_and_rating(self, itch_api_key):
+    def refresh_tags_and_rating(self, itch_api_key, force: bool = False):
         req = urllib.request.Request(self.url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            if self.status != 'Abandoned' and self.status != 'Canceled':
+            if force or self.status not in ['Abandoned', 'Canceled']:
                 game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
                 if game_info:
                     self.status = game_info[0].text
@@ -161,7 +161,7 @@ class Game(Base):
                 self.created_at = publish_datetime.timestamp()
                 self.thumb_url = game['game']['cover_url']
 
-    def refresh_version(self, itch_api_key):
+    def refresh_version(self, itch_api_key, force: bool = False):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req) as url:
@@ -173,10 +173,13 @@ class Game(Base):
                 self.platform_android = 0
                 self.platform_web = 0
                 linux_upload = None
+                windows_upload = None
+                android_upload = None
                 for upload in uploads['uploads']:
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
                             self.platform_windows = 1
+                            windows_upload = upload
                         if 'p_linux' in upload['traits']:
                             self.platform_linux = 1
                             linux_upload = upload
@@ -184,8 +187,14 @@ class Game(Base):
                             self.platform_mac = 1
                         if 'p_android' in upload['traits']:
                             self.platform_android = 1
+                            android_upload = upload
                 latest_timestamp = 0
-                for upload in uploads['uploads']:
+                # Force update check by setting updated_at to 0
+                if force and (linux_upload or windows_upload or android_upload):
+                    self.updated_at = 0
+                for upload in [linux_upload, windows_upload, android_upload]:
+                    if upload is None:
+                        continue
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                     timestamp = int(datetime.datetime.timestamp(element))
                     if latest_timestamp < timestamp:
@@ -196,9 +205,8 @@ class Game(Base):
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
                                 self.updated_at = timestamp
                                 self.latest_version = upload['build']['user_version']
-                                if linux_upload:
+                                if upload is linux_upload:
                                     self.get_script_stats(itch_api_key, linux_upload)
-                                    linux_upload = None
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -207,9 +215,8 @@ class Game(Base):
                                 if matches:
                                     self.updated_at = timestamp
                                     self.latest_version = matches.group(0).rstrip('.')
-                                    if linux_upload:
+                                    if upload is linux_upload:
                                         self.get_script_stats(itch_api_key, linux_upload)
-                                        linux_upload = None
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1

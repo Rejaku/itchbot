@@ -85,12 +85,17 @@ async def unsubscribe(ctx):
 
 
 @bot.slash_command(name="refresh")
-async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bool = False, refresh_tags: bool = False):
+async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bool = False, refresh_tags: bool = False, force: bool = False):
     if name:
         session = Session()
-        games = session.query(Game) \
-            .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
-            .all()
+        if force:
+            games = session.query(Game) \
+                .filter(Game.name.contains(name)) \
+                .all()
+        else:
+            games = session.query(Game) \
+                .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
+                .all()
         matches = len(games)
         if matches:
             await ctx.respond(f'Refreshing {matches} matches for "{name}"')
@@ -100,11 +105,11 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
                     session.commit()
                     time.sleep(10)
                 if refresh_tags:
-                    game.refresh_tags_and_rating(ITCH_API_KEY)
+                    game.refresh_tags_and_rating(ITCH_API_KEY, force)
                     session.commit()
                     time.sleep(10)
                 if refresh_version:
-                    game.refresh_version(ITCH_API_KEY)
+                    game.refresh_version(ITCH_API_KEY, force)
                     session.commit()
                     time.sleep(10)
         else:
