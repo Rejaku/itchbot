@@ -5,10 +5,18 @@
     <style>
         body {
             font-family: Sans-Serif, serif;
+            overflow: scroll;
         }
         [data-column-id="stats_menus"],
         [data-column-id="stats_words"] {
             text-align: right;
+        }
+        th.gridjs-th-sort .gridjs-th-content {
+            width: min-content;
+            white-space: initial;
+        }
+        #table {
+            display: inline-table;
         }
     </style>
 </head>
