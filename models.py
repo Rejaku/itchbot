@@ -284,7 +284,7 @@ class Game(Base):
                 if os.path.isdir(extract_directory):
                     directory_listing = os.listdir(extract_directory)
                 if len(directory_listing) == 1:
-                    game_dir = extract_directory + '/' + quote(directory_listing[0])
+                    game_dir = extract_directory + '/' + directory_listing[0]
                     if os.path.isdir(game_dir):
                         game_dir_files = os.listdir(game_dir)
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
