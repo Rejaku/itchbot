@@ -287,23 +287,25 @@ class Game(Base):
                     game_dir = extract_directory + '/' + directory_listing[0]
                     if os.path.isdir(game_dir):
                         game_dir_files = os.listdir(game_dir)
+                else:
+                    game_dir = extract_directory
+                    game_dir_files = directory_listing
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
                     if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(game_dir + '/lib/py3-linux-x86_64') and not os.path.isdir(game_dir + '/lib/linux-x86_64'):
                         shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
                         shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
-                        shutil.copytree('./renpy/py2-linux-x86_64', game_dir + '/lib/py2-linux-x86_64', dirs_exist_ok=True)
                         shutil.copytree('./renpy/py3-linux-x86_64', game_dir + '/lib/py3-linux-x86_64', dirs_exist_ok=True)
                         # Refresh the directory listing
                         game_dir_files = os.listdir(game_dir)
                     for game_dir_file in game_dir_files:
                         if game_dir_file.endswith('.sh'):
-                            subprocess.run(f'chmod -R +x {quote(directory_listing[0])}',
-                                           cwd=extract_directory, shell=True)
-                            subprocess.run(f'{quote(directory_listing[0])}/{quote(game_dir_file)} {quote(directory_listing[0])}/game test',
-                                           cwd=extract_directory, shell=True)
-                            if os.path.isfile(extract_directory + '/stats.json'):
-                                stats_file = open(extract_directory + '/stats.json')
+                            subprocess.run(f'chmod -R +x *',
+                                           cwd=game_dir, shell=True)
+                            subprocess.run(f'./{quote(game_dir_file)} game test',
+                                           cwd=game_dir, shell=True)
+                            if os.path.isfile(game_dir + '/stats.json'):
+                                stats_file = open(game_dir + '/stats.json')
                                 stats = json.load(stats_file)
                                 stats_file.close()
                                 if stats:
