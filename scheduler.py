@@ -3,7 +3,6 @@ import json
 import threading
 import time
 import urllib.request
-from http.client import RemoteDisconnected
 
 import schedule
 
@@ -16,13 +15,13 @@ def refresh_tags_and_rating(itch_api_key):
     print('[refresh_tags_and_rating] Start')
     session = Session()
     games = session.query(Game).all()
-    try:
-        for game in games:
+    for game in games:
+        try:
             game.refresh_tags_and_rating(itch_api_key)
-            session.commit()
-            time.sleep(10)
-    except RemoteDisconnected:
-        pass
+        except Exception:
+            game.status = 'Update Error'
+        session.commit()
+        time.sleep(10)
     session.close()
     print('[refresh_tags_and_rating] End')
 
@@ -31,10 +30,13 @@ def refresh_version(itch_api_key):
     print('[refresh_version] Start')
     session = Session()
     games = session.query(Game) \
-        .filter(Game.status != 'Abandoned', Game.status != 'Canceled') \
+        .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.status != 'Update Error') \
         .all()
     for game in games:
-        game.refresh_version(itch_api_key)
+        try:
+            game.refresh_version(itch_api_key)
+        except Exception:
+            game.status = 'Update Error'
         session.commit()
     session.close()
     print('[refresh_version] End')
@@ -102,7 +104,6 @@ class Scheduler:
     ) -> None:
         self.itch_api_key = itch_api_key
         self.itch_collection_id = itch_collection_id
-        self.update_watchlist()
         # makes our logic non-blocking
         thread = threading.Thread(target=self.scheduler)
         thread.start()
