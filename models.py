@@ -143,8 +143,6 @@ class Game(Base):
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Languages') > -1:
                     self.languages = tr.text.strip()[9:]
-                if tr.text.find('Published') > -1:
-                    self.created_at = tr.text.strip()[9:]
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
 
