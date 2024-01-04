@@ -76,7 +76,6 @@ class Scheduler:
                             game.name = collection_entry['game'].get('title')
                             game.description = collection_entry['game'].get('short_text')
                             game.thumb_url = collection_entry['game'].get('cover_url')
-                            game.updated_at = time.time()
                             session.commit()
                     else:
                         game = Game(
@@ -87,7 +86,7 @@ class Scheduler:
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
                             latest_version='unknown',
-                            created_at=int(time.time()),
+                            created_at=0,
                             updated_at=0
                         )
                         session.add(game)
