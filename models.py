@@ -222,7 +222,7 @@ class Game(Base):
                                     if self.latest_version == latest_version:
                                         continue
                                     self.updated_at = timestamp
-                                    self.latest_version = matches.group(0).rstrip('.')
+                                    self.latest_version = latest_version
                                     if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                         self.get_script_stats(itch_api_key, upload)
                                     break
