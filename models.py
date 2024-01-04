@@ -205,8 +205,11 @@ class Game(Base):
                     if self.updated_at < timestamp:
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
+                                latest_version = upload['build']['user_version']
+                                if self.latest_version == latest_version:
+                                    continue
                                 self.updated_at = timestamp
-                                self.latest_version = upload['build']['user_version']
+                                self.latest_version = latest_version
                                 if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                     self.get_script_stats(itch_api_key, upload)
                                 break
@@ -215,6 +218,9 @@ class Game(Base):
                                 # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
+                                    latest_version = matches.group(0).rstrip('.')
+                                    if self.latest_version == latest_version:
+                                        continue
                                     self.updated_at = timestamp
                                     self.latest_version = matches.group(0).rstrip('.')
                                     if upload is linux_upload or (upload is windows_upload and linux_upload is None):
@@ -222,7 +228,8 @@ class Game(Base):
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
-                self.updated_at = latest_timestamp
+                if latest_timestamp > 0:
+                    self.updated_at = latest_timestamp
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
