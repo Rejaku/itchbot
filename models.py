@@ -133,12 +133,11 @@ class Game(Base):
                 devlog_links = devlog.find_all('a', href=True)
                 if devlog_links:
                     self.devlog = devlog_links[0]['href']
-            json_lds = soup.findAll("script", {"type": "application/ld+json"})
-            for json_ld in json_lds:
-                json_content = json.loads("".join(json_ld.contents))
-                if json_content.get('aggregateRating'):
-                    self.rating = json_content['aggregateRating'].get('ratingValue')
-                    self.rating_count = json_content['aggregateRating'].get('ratingCount')
+            rating = soup.find("div", itemprop="ratingValue")
+            rating_count = soup.find("span", itemprop="ratingCount")
+            if rating and rating_count:
+                self.rating = rating['content']
+                self.rating_count = rating_count['content']
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Languages') > -1:
