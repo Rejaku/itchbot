@@ -18,7 +18,8 @@ def refresh_tags_and_rating(itch_api_key):
     for game in games:
         try:
             game.refresh_tags_and_rating(itch_api_key)
-        except Exception:
+        except Exception as exception:
+            print('[Update Error]', exception)
             game.status = 'Update Error'
         session.commit()
         time.sleep(10)
