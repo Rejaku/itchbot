@@ -9,9 +9,10 @@ import urllib.request
 import zipfile
 import tarfile
 import shutil
+import time
 from urllib.error import ContentTooShortError, HTTPError
 
-from sqlalchemy import create_engine, Column, String, Integer, Float
+from sqlalchemy import create_engine, Column, String, Integer, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
 from shlex import quote
@@ -332,3 +333,80 @@ class User(Base):
     def __init__(self, discord_id, processed_at):
         self.discord_id = discord_id
         self.processed_at = processed_at
+
+class Review(Base):
+    __tablename__ = 'reviews'
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, nullable=False)
+    created_at = Column(Integer, nullable=False)
+    updated_at = Column(Integer, nullable=False)
+    game_id = Column(Integer, nullable=False)
+    user_name = Column(String(100), nullable=False)
+    rating = Column(Integer, nullable=False)
+    review = Column(Text)
+
+    def __init__(self, event_id, created_at, updated_at, game_id, user_name, rating, review):
+        self.event_id = event_id
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.game_id = game_id
+        self.user_name = user_name
+        self.rating = rating
+        self.review = review
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'event_id': self.event_id,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
+            'game_id': self.game_id,
+            'user_name': self.user_name,
+            'rating': self.rating,
+            'review': self.review
+        }
+
+    @staticmethod
+    def import_reviews(itch_api_key, start_event_id = None):
+        url = 'https://itch.io/feed?filter=ratings&format=json'
+        if start_event_id is not None:
+            url += '&from_event=' + str(start_event_id)
+        req = urllib.request.Request(url)
+        req.add_header('Authorization', itch_api_key)
+        with urllib.request.urlopen(req) as url:
+            events = json.load(url)
+            start_event_id = None
+            if 'next_page' in events:
+                start_event_id = int(events['next_page'])
+            if 'content' in events:
+                session = Session()
+                soup = BeautifulSoup(events['content'], 'html.parser')
+                reviews = soup.find_all("div", {"class": "event_row"})
+                for review in reviews:
+                    user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
+                    event_time = review.find("a", {"class": "event_time"}, href=True)
+                    event_id = int(event_time['href'].split('/')[-1])
+                    updated_at = datetime.datetime.strptime(
+                        event_time['title'],
+                        '%Y-%m-%d %H:%M:%S'
+                    ).timestamp()
+                    game_id = int(review.find("div", {"class": "game_cell"})['data-game_id'])
+                    rating = len(review.find_all("span", {"class": "icon-star"}))
+                    rating_blurb = review.find("div", {"class": "rating_blurb"})
+                    review_text = ''
+                    if rating_blurb:
+                        review_text = rating_blurb.text
+                    existing_review = session.query(Review).filter_by(event_id=event_id).first()
+                    if existing_review is None:
+                        new_review = Review(event_id, updated_at, updated_at, game_id, user_name, rating, review_text)
+                        session.add(new_review)
+                    else:
+                        existing_review.updated_at = updated_at
+                        existing_review.rating = rating
+                        existing_review.review = review_text
+                    session.commit()
+                session.close()
+            if start_event_id is not None:
+                time.sleep(10)
+                Review.import_reviews(itch_api_key, start_event_id)

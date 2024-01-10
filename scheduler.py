@@ -6,7 +6,7 @@ import urllib.request
 
 import schedule
 
-from models import engine, Session, Base, Game
+from models import engine, Session, Base, Game, Review
 
 Base.metadata.create_all(engine)
 
@@ -104,6 +104,7 @@ class Scheduler:
     ) -> None:
         self.itch_api_key = itch_api_key
         self.itch_collection_id = itch_collection_id
+        #Review.import_reviews(itch_api_key)
         # makes our logic non-blocking
         thread = threading.Thread(target=self.scheduler)
         thread.start()
