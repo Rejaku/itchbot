@@ -5,6 +5,8 @@ Flask
 mypy
 py-cord
 pymysql
+requests
+requests-html
 schedule
 sqlalchemy
 sqlalchemy2-stubs

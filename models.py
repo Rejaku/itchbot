@@ -341,16 +341,22 @@ class Review(Base):
     event_id = Column(Integer, nullable=False)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer, nullable=False)
-    game_id = Column(Integer, nullable=False)
+    game_id = Column(Integer)
+    game_name = Column(String(200), nullable=False)
+    game_url = Column(String(250), nullable=False)
+    user_id = Column(Integer)
     user_name = Column(String(100), nullable=False)
     rating = Column(Integer, nullable=False)
     review = Column(Text)
 
-    def __init__(self, event_id, created_at, updated_at, game_id, user_name, rating, review):
+    def __init__(self, event_id, created_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review):
         self.event_id = event_id
         self.created_at = created_at
         self.updated_at = updated_at
         self.game_id = game_id
+        self.game_name = game_name
+        self.game_url = game_url
+        self.user_id = user_id
         self.user_name = user_name
         self.rating = rating
         self.review = review
@@ -362,20 +368,21 @@ class Review(Base):
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'game_id': self.game_id,
+            'game_name': self.game_name,
+            'game_url': self.game_url,
+            'user_id': self.user_id,
             'user_name': self.user_name,
             'rating': self.rating,
             'review': self.review
         }
 
     @staticmethod
-    def import_reviews(itch_api_key, start_event_id = None):
+    def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         if start_event_id is not None:
             url += '&from_event=' + str(start_event_id)
-        req = urllib.request.Request(url)
-        req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req) as url:
-            events = json.load(url)
+        with request_session.get(url) as response:
+            events = json.loads(response.text)
             start_event_id = None
             if 'next_page' in events:
                 start_event_id = int(events['next_page'])
@@ -384,22 +391,33 @@ class Review(Base):
                 soup = BeautifulSoup(events['content'], 'html.parser')
                 reviews = soup.find_all("div", {"class": "event_row"})
                 for review in reviews:
+                    script = review.find("script", {"type": "text/javascript"})
+                    if script:
+                        user_id = re.findall(r"user_id.*:(\d+)", script.text).pop()
+                    else:
+                        user_id = None
                     user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
                     event_time = review.find("a", {"class": "event_time"}, href=True)
                     event_id = int(event_time['href'].split('/')[-1])
-                    updated_at = datetime.datetime.strptime(
-                        event_time['title'],
-                        '%Y-%m-%d %H:%M:%S'
-                    ).timestamp()
-                    game_id = int(review.find("div", {"class": "game_cell"})['data-game_id'])
+                    updated_at = int(datetime.datetime.fromisoformat(
+                        event_time['title'] + '+00:00'
+                    ).timestamp())
+                    game_cell = review.find("div", {"class": "game_cell"})
+                    if game_cell:
+                        game_id = int(game_cell['data-game_id'])
+                    else:
+                        game_id = None
+                    game_info = review.find("a", {"class": "object_title"}, href=True)
+                    game_name = game_info.text
+                    game_url = game_info['href']
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
                     review_text = ''
                     if rating_blurb:
-                        review_text = rating_blurb.text
+                        review_text = rating_blurb
                     existing_review = session.query(Review).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Review(event_id, updated_at, updated_at, game_id, user_name, rating, review_text)
+                        new_review = Review(event_id, updated_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review_text)
                         session.add(new_review)
                     else:
                         existing_review.updated_at = updated_at
@@ -409,4 +427,4 @@ class Review(Base):
                 session.close()
             if start_event_id is not None:
                 time.sleep(10)
-                Review.import_reviews(itch_api_key, start_event_id)
+                Review.import_reviews(request_session, start_event_id)

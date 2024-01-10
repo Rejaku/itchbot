@@ -23,11 +23,17 @@ def upgrade() -> None:
         sa.Column('event_id', sa.Integer, nullable=False),
         sa.Column('created_at', sa.FLOAT, nullable=False),
         sa.Column('updated_at', sa.FLOAT, nullable=False),
-        sa.Column('game_id', sa.Integer, nullable=False),
+        sa.Column('game_id', sa.Integer),
+        sa.Column('game_name', sa.String(200), nullable=False),
+        sa.Column('game_url', sa.String(250), nullable=False),
         sa.Column('user_name', sa.String(100), nullable=False),
+        sa.Column('user_id', sa.Integer),
         sa.Column('rating', sa.Integer, nullable=False),
         sa.Column('review', sa.Text)
     )
+    op.create_index('idx_reviews_event_id', 'reviews', ['event_id'], unique=True)
+    op.create_index('idx_reviews_game_id', 'reviews', ['game_id'])
+    op.create_index('idx_reviews_user_id', 'reviews', ['user_id'])
 
 
 def downgrade() -> None:
