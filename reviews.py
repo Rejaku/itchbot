@@ -28,7 +28,7 @@ start_event_id = None
 if oldest_review:
     start_event_id = oldest_review.event_id
 
-while true:
+while True:
     start_event_id = Review.import_reviews(request_session, start_event_id)
     if start_event_id is None or start_event_id < 19600000:
         break
