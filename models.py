@@ -425,6 +425,4 @@ class Review(Base):
                         existing_review.review = review_text
                     session.commit()
                 session.close()
-            if start_event_id is not None:
-                time.sleep(10)
-                Review.import_reviews(request_session, start_event_id)
+        return start_event_id

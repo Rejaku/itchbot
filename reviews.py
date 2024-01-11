@@ -1,5 +1,6 @@
 # coding=utf-8
 import os
+import time
 
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
@@ -27,4 +28,8 @@ start_event_id = None
 if oldest_review:
     start_event_id = oldest_review.event_id
 
-Review.import_reviews(request_session, start_event_id)
+while true:
+    start_event_id = Review.import_reviews(request_session, start_event_id)
+    if start_event_id is None or start_event_id < 19600000:
+        break
+    time.sleep(10)
