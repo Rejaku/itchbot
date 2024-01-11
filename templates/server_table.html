@@ -4,6 +4,8 @@
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
+            background-color: #4b4848;
+            color: #fff;
             font-family: Sans-Serif, serif;
             overflow: scroll;
         }
@@ -17,6 +19,29 @@
         }
         #table {
             display: inline-table;
+        }
+        th.gridjs-th {
+            background-color: #222222;
+            color: #fff;
+        }
+        th.gridjs-th-sort:focus, th.gridjs-th-sort:hover {
+            background-color: #707070;
+        }
+        button.gridjs-sort-neutral {
+            opacity: 0.7;
+            filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(239deg) brightness(106%) contrast(101%);
+        }
+        .gridjs-tbody, td.gridjs-td {
+            background-color: #4b4848;
+        }
+        a {
+            color: #fff;
+        }
+        .gridjs-footer {
+            background-color: #222222;
+        }
+        .gridjs-pagination {
+            color: #fff;
         }
     </style>
 </head>
