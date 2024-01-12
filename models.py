@@ -363,15 +363,8 @@ class Review(Base):
 
     def to_dict(self):
         return {
-            'id': self.id,
             'event_id': self.event_id,
-            'created_at': self.created_at,
             'updated_at': self.updated_at,
-            'game_id': self.game_id,
-            'game_name': self.game_name,
-            'game_url': self.game_url,
-            'user_id': self.user_id,
-            'user_name': self.user_name,
             'rating': self.rating,
             'review': self.review
         }
