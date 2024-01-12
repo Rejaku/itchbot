@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, render_template, request
 from models import engine, Session, Base, Game, Review
 
 app = Flask(__name__)
@@ -76,7 +76,7 @@ def api_data_route():
 @app.route('/api/reviews/<game_id>')
 def api_reviews_route(game_id):
     session = Session()
-    reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.review != '')
+    reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.review != '').group_by(Review.user_id)
     total = reviews.count()
 
     # sorting
