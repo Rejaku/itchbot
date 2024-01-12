@@ -23,6 +23,10 @@ def reviews_route(game_id):
     game_name = None
     if game:
         game_name = game.name
+    else:
+        review = session.query(Review).filter(Review.game_id == game_id).order_by('-created_at').first()
+        if review:
+            game_name = review.game_name
     session.close()
 
     return render_template('review_table.html', game_id=game_id, game_name=game_name)
