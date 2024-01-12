@@ -16,7 +16,7 @@ HYPERLINK = '<a href="{}">{}</a>'
 def games_route():
     return render_template('server_table.html')
 
-@app.route('/reviews/<game_id>')
+@app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
     return render_template('review_table.html', game_id=game_id)
 
@@ -77,7 +77,7 @@ def api_reviews_route(game_id):
             name = s[1:]
             if name not in ['updated_at', 'rating', 'review']:
                 name = 'updated_at'
-            col = getattr(Game, name)
+            col = getattr(Review, name)
             if direction == '-':
                 col = col.desc()
             order.append(col)

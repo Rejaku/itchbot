@@ -51,7 +51,7 @@
             }
         ],
         server: {
-            url: '/api/reviews/{% game_id %}',
+            url: '/api/reviews/{{ game_id }}',
             then: results => results.data,
             total: results => results.total,
         },
