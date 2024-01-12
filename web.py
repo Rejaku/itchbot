@@ -24,7 +24,7 @@ def reviews_route(game_id):
     if game:
         game_name = game.name
     else:
-        review = session.query(Review).filter(Review.game_id == game_id).order_by('-created_at').first()
+        review = session.query(Review).filter(Review.game_id == game_id).order_by(Review.created_at.desc()).first()
         if review:
             game_name = review.game_name
     session.close()
