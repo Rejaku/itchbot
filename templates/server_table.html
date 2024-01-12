@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>Games</title>
+    <title>FVNs</title>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -53,7 +53,7 @@
 </head>
 <body>
 <div>
-    <h1>Games</h1>
+    <h1>FVNs</h1>
     <hr>
     <div id="table"></div>
 </div>
@@ -75,6 +75,7 @@
             {id: 'platform_web', name: 'Web', sort: false, hidden: true},
             {id: 'stats_blocks', name: 'Blocks', sort: false, hidden: true},
             {id: 'stats_options', name: 'Options', sort: false, hidden: true},
+            {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
             {
                 id: 'name', name: 'Name', formatter: (cell, row) => {
                     return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
@@ -93,7 +94,7 @@
             },
             {
                 id: 'rating', name: 'Rating', formatter: (cell, row) => {
-                    return cell + ' (' + row.cells[2].data + ' votes)';
+                    return gridjs.html('<a target="_blank" href="/reviews/' + row.cells[10].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
                 }
             },
             {
@@ -160,7 +161,7 @@
             server: {
                 url: (prev, columns) => {
                     const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
-                        'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options',
+                        'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options', 'game_id',
                         'name', 'thumb_url', 'description', 'latest_version', 'rating', 'created_at', 'updated_at',
                         'stats_menus', 'stats_words', 'languages', 'platforms', 'game_engine', 'status'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);

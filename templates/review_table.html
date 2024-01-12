@@ -1,0 +1,83 @@
+<html lang="en">
+<head>
+    <title>Reviews</title>
+    <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: Sans-Serif, serif;
+            overflow: scroll;
+        }
+        [data-column-id="stats_menus"],
+        [data-column-id="stats_words"] {
+            text-align: right;
+        }
+        th.gridjs-th-sort .gridjs-th-content {
+            width: min-content;
+            white-space: initial;
+        }
+        #table {
+            display: inline-table;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Reviews</h1>
+    <hr>
+    <div id="table"></div>
+</div>
+<script src="https://unpkg.com/gridjs@5/dist/gridjs.umd.js"></script>
+<script>
+    const updateUrl = (prev, query) => {
+        return prev + (prev.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(query).toString();
+    };
+
+    new gridjs.Grid({
+        columns: [
+            {
+                id: 'updated_at', name: 'Date', formatter: (cell) => {
+                    return cell ? (new Date(cell * 1000)).toLocaleString() : '';
+                }
+            },
+            {
+                id: 'rating', name: 'Rating', formatter: (cell) => {
+                    return cell;
+                }
+            },
+            {
+                id: 'review', name: 'Review', formatter: (cell) => {
+                    return cell ? gridjs.html(cell) : '';
+                }
+            }
+        ],
+        server: {
+            url: '/api/reviews/{% game_id %}',
+            then: results => results.data,
+            total: results => results.total,
+        },
+        search: {
+            enabled: false,
+        },
+        sort: {
+            enabled: true,
+            multiColumn: true,
+            server: {
+                url: (prev, columns) => {
+                    const columnIds = ['updated_at', 'rating', 'review'];
+                    const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
+                    return updateUrl(prev, {sort});
+                },
+            },
+        },
+        pagination: {
+            enabled: true,
+            server: {
+                url: (prev, page, limit) => {
+                    return updateUrl(prev, {start: page * limit, length: limit});
+                },
+            },
+        },
+    }).render(document.getElementById('table'));
+</script>
+</body>
+</html>
