@@ -76,7 +76,7 @@ def api_data_route():
 @app.route('/api/reviews/<game_id>')
 def api_reviews_route(game_id):
     session = Session()
-    reviews = session.query(Review).filter(Review.game_id == int(game_id))
+    reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.review != '')
     total = reviews.count()
 
     # sorting
