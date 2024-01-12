@@ -19,7 +19,7 @@ def games_route():
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
     session = Session()
-    game = session.query(Game).filter(Game.id == game_id).first()
+    game = session.query(Game).filter(Game.game_id == game_id).first()
     game_name = None
     if game:
         game_name = game.name
