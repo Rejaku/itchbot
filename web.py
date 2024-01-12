@@ -18,7 +18,14 @@ def games_route():
 
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
-    return render_template('review_table.html', game_id=game_id)
+    session = Session()
+    game = session.query(Game).filter(Game.id == game_id).first()
+    game_name = None
+    if game:
+        game_name = game.name
+    session.close()
+
+    return render_template('review_table.html', game_id=game_id, game_name=game_name)
 
 @app.route('/api/data')
 def api_data_route():
