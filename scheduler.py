@@ -80,7 +80,7 @@ class Scheduler:
                             session.commit()
                         if game.created_at == 0:
                             game.created_at = int(datetime.datetime.fromisoformat(
-                                game['game']['published_at']
+                                collection_entry['game']['published_at']
                             ).timestamp())
                             session.commit()
                     else:
@@ -93,7 +93,7 @@ class Scheduler:
                             thumb_url=collection_entry['game'].get('cover_url'),
                             latest_version='unknown',
                             created_at=int(datetime.datetime.fromisoformat(
-                                game['game']['published_at']
+                                collection_entry['game']['published_at']
                             ).timestamp()),
                             updated_at=0
                         )
