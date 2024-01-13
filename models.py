@@ -152,11 +152,9 @@ class Game(Base):
         with urllib.request.urlopen(req) as url:
             game = json.load(url)
             if 'game' in game:
-                publish_datetime = datetime.datetime.strptime(
-                    game['game']['published_at'],
-                    '%Y-%m-%dT%H:%M:%S.000000000Z'
-                )
-                self.created_at = publish_datetime.timestamp()
+                self.created_at = int(datetime.datetime.fromisoformat(
+                    game['game']['published_at']
+                ).timestamp())
                 self.thumb_url = game['game']['cover_url']
 
     def refresh_version(self, itch_api_key, force: bool = False):

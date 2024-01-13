@@ -1,3 +1,4 @@
+import datetime
 import json
 import threading
 import time
@@ -77,6 +78,11 @@ class Scheduler:
                             game.description = collection_entry['game'].get('short_text')
                             game.thumb_url = collection_entry['game'].get('cover_url')
                             session.commit()
+                        if game.created_at == 0:
+                            game.created_at = int(datetime.datetime.fromisoformat(
+                                game['game']['published_at']
+                            ).timestamp())
+                            session.commit()
                     else:
                         game = Game(
                             service='itch',
@@ -86,7 +92,9 @@ class Scheduler:
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
                             latest_version='unknown',
-                            created_at=0,
+                            created_at=int(datetime.datetime.fromisoformat(
+                                game['game']['published_at']
+                            ).timestamp()),
                             updated_at=0
                         )
                         session.add(game)
