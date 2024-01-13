@@ -384,7 +384,7 @@ class Review(Base):
                 for review in reviews:
                     script = review.find("script", {"type": "text/javascript"})
                     if script:
-                        user_id = re.findall(r"user_id.*:(\d+)", script.text).pop()
+                        user_id = re.findall(r"user_id.*:(\d+)", script.text).pop(0)
                     else:
                         user_id = None
                     user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
