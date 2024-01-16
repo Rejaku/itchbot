@@ -9,9 +9,10 @@ import urllib.request
 import zipfile
 import tarfile
 import shutil
-import time
 from urllib.error import ContentTooShortError, HTTPError
 
+import backoff
+import requests
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
@@ -368,11 +369,16 @@ class Review(Base):
         }
 
     @staticmethod
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError))
     def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         if start_event_id is not None:
             url += '&from_event=' + str(start_event_id)
-        with request_session.get(url) as response:
+        print("[import_reviews] URL: " + url)
+        with request_session.get(url, timeout=5) as response:
+            print("[import_reviews] Received response")
             events = json.loads(response.text)
             start_event_id = None
             if 'next_page' in events:
