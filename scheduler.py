@@ -13,33 +13,31 @@ Base.metadata.create_all(engine)
 
 def refresh_tags_and_rating(itch_api_key):
     print('[refresh_tags_and_rating] Start')
-    session = Session()
-    games = session.query(Game).all()
-    for game in games:
-        try:
-            game.refresh_tags_and_rating(itch_api_key)
-        except Exception as exception:
-            print('[Update Error]', exception)
-            game.status = 'Update Error'
-        session.commit()
-        time.sleep(10)
-    session.close()
+    with Session() as session:
+        games = session.query(Game).all()
+        for game in games:
+            try:
+                game.refresh_tags_and_rating(itch_api_key)
+            except Exception as exception:
+                print('[Update Error]', exception)
+                game.status = 'Update Error'
+            session.commit()
+            time.sleep(10)
     print('[refresh_tags_and_rating] End')
 
 
 def refresh_version(itch_api_key):
     print('[refresh_version] Start')
-    session = Session()
-    games = session.query(Game) \
-        .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.status != 'Update Error') \
-        .all()
-    for game in games:
-        try:
-            game.refresh_version(itch_api_key)
-        except Exception:
-            game.status = 'Update Error'
-        session.commit()
-    session.close()
+    with Session() as session:
+        games = session.query(Game) \
+            .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.status != 'Update Error') \
+            .all()
+        for game in games:
+            try:
+                game.refresh_version(itch_api_key)
+            except Exception:
+                game.status = 'Update Error'
+            session.commit()
     print('[refresh_version] End')
 
 
@@ -51,57 +49,56 @@ class Scheduler:
 
     def update_watchlist(self):
         print('[update_watchlist] Start')
-        session = Session()
-        page = 0
-        while True:
-            page += 1
-            req = urllib.request.Request(
-                'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page)
-            )
-            req.add_header('Authorization', self.itch_api_key)
-            with urllib.request.urlopen(req) as url:
-                collection = json.load(url)
-                if len(collection['collection_games']) == 0:
-                    print('No more!')
-                    break
+        with Session() as session:
+            page = 0
+            while True:
+                page += 1
+                req = urllib.request.Request(
+                    'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page)
+                )
+                req.add_header('Authorization', self.itch_api_key)
+                with urllib.request.urlopen(req) as url:
+                    collection = json.load(url)
+                    if len(collection['collection_games']) == 0:
+                        print('No more!')
+                        break
 
-                for collection_entry in collection['collection_games']:
-                    game = session.query(Game) \
-                        .filter(Game.service == 'itch', Game.game_id == collection_entry['game']['id']) \
-                        .first()
-                    # Update if already in DB
-                    if game:
-                        if collection_entry['game'].get('title') != game.name \
-                                or collection_entry['game'].get('short_text') != game.description \
-                                or collection_entry['game'].get('cover_url') != game.thumb_url:
-                            game.name = collection_entry['game'].get('title')
-                            game.description = collection_entry['game'].get('short_text')
-                            game.thumb_url = collection_entry['game'].get('cover_url')
+                    for collection_entry in collection['collection_games']:
+                        game = session.query(Game) \
+                            .filter(Game.service == 'itch', Game.game_id == collection_entry['game']['id']) \
+                            .first()
+                        # Update if already in DB
+                        if game:
+                            if collection_entry['game'].get('title') != game.name \
+                                    or collection_entry['game'].get('short_text') != game.description \
+                                    or collection_entry['game'].get('cover_url') != game.thumb_url:
+                                game.name = collection_entry['game'].get('title')
+                                game.description = collection_entry['game'].get('short_text')
+                                game.thumb_url = collection_entry['game'].get('cover_url')
+                                session.commit()
+                            if game.created_at == 0:
+                                game.created_at = int(datetime.datetime.fromisoformat(
+                                    collection_entry['game']['published_at']
+                                ).timestamp())
+                                session.commit()
+                        else:
+                            game = Game(
+                                service='itch',
+                                game_id=collection_entry['game']['id'],
+                                name=collection_entry['game']['title'],
+                                description=collection_entry['game'].get('short_text'),
+                                url=collection_entry['game']['url'],
+                                thumb_url=collection_entry['game'].get('cover_url'),
+                                latest_version='unknown',
+                                created_at=int(datetime.datetime.fromisoformat(
+                                    collection_entry['game']['published_at']
+                                ).timestamp()),
+                                updated_at=0
+                            )
+                            session.add(game)
                             session.commit()
-                        if game.created_at == 0:
-                            game.created_at = int(datetime.datetime.fromisoformat(
-                                collection_entry['game']['published_at']
-                            ).timestamp())
-                            session.commit()
-                    else:
-                        game = Game(
-                            service='itch',
-                            game_id=collection_entry['game']['id'],
-                            name=collection_entry['game']['title'],
-                            description=collection_entry['game'].get('short_text'),
-                            url=collection_entry['game']['url'],
-                            thumb_url=collection_entry['game'].get('cover_url'),
-                            latest_version='unknown',
-                            created_at=int(datetime.datetime.fromisoformat(
-                                collection_entry['game']['published_at']
-                            ).timestamp()),
-                            updated_at=0
-                        )
-                        session.add(game)
-                        session.commit()
-                    time.sleep(5)
-                pass
-        session.close()
+                        time.sleep(5)
+                    pass
         print('[update_watchlist] End')
 
     def run(
