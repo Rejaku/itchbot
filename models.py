@@ -378,14 +378,13 @@ class Review(Base):
         if start_event_id is not None:
             url += '&from_event=' + str(start_event_id)
         print("[import_reviews] URL: " + url)
-        with request_session.get(url, timeout=5) as response:
+        with request_session.get(url, timeout=5) as response, Session() as session:
             print("[import_reviews] Received response")
             events = json.loads(response.text)
             start_event_id = None
             if 'next_page' in events:
                 start_event_id = int(events['next_page'])
             if 'content' in events:
-                session = Session()
                 soup = BeautifulSoup(events['content'], 'html.parser')
                 reviews = soup.find_all("div", {"class": "event_row"})
                 for review in reviews:
@@ -424,7 +423,6 @@ class Review(Base):
                     session.commit()
                     if start_event_id is None or start_event_id > event_id:
                         start_event_id = event_id
-                session.close()
             if start_event_id is None and previous_start_event_id is not None:
                 start_event_id = previous_start_event_id - 1
 

@@ -21,17 +21,16 @@ request_session.post(
 )
 
 # Get the oldest timestamp
-session = Session()
-oldest_review = session.query(Review).order_by(Review.event_id.asc()).first()
-
 start_event_id = None
-if oldest_review:
-    start_event_id = oldest_review.event_id
+with Session() as session:
+    oldest_review = session.query(Review).order_by(Review.event_id.asc()).first()
+    if oldest_review:
+        start_event_id = oldest_review.event_id
 
 while True:
     print('[reviews] Loop start: ' + str(start_event_id))
     start_event_id = Review.import_reviews(request_session, start_event_id)
-    if start_event_id is None or start_event_id < 19600000:
+    if start_event_id is None or start_event_id < 12000000:
         break
-    print('[reviews] Loop end: ' + str(start_event_id))
+    print('[reviews] Loop end: ' + str(start_event_id) + "\n\n")
     time.sleep(10)
