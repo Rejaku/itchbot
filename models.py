@@ -421,7 +421,7 @@ class Review(Base):
                         existing_review.rating = rating
                         existing_review.review = review_text
                     session.commit()
-                    if start_event_id is None or start_event_id < event_id:
+                    if start_event_id is None or start_event_id > event_id:
                         start_event_id = event_id
                 session.close()
         return start_event_id
