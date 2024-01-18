@@ -374,6 +374,7 @@ class Review(Base):
                            requests.exceptions.ConnectionError))
     def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
+        previous_start_event_id = start_event_id
         if start_event_id is not None:
             url += '&from_event=' + str(start_event_id)
         print("[import_reviews] URL: " + url)
@@ -424,4 +425,7 @@ class Review(Base):
                     if start_event_id is None or start_event_id > event_id:
                         start_event_id = event_id
                 session.close()
+            if start_event_id is None and previous_start_event_id is not None:
+                start_event_id = previous_start_event_id - 1
+
         return start_event_id
