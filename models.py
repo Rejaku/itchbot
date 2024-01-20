@@ -11,8 +11,6 @@ import tarfile
 import shutil
 from urllib.error import ContentTooShortError, HTTPError
 
-import backoff
-import requests
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
@@ -369,9 +367,6 @@ class Review(Base):
         }
 
     @staticmethod
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError))
     def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id

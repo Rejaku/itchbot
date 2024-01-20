@@ -12,7 +12,7 @@ ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
 
 url = "https://itch.io/login"
 request_session = HTMLSession()
-login = request_session.get(url)
+login = request_session.get(url, timeout=5)
 s = BeautifulSoup(login.text, "html.parser")
 csrf_token = s.find("input", {"name": "csrf_token"})["value"]
 request_session.post(
