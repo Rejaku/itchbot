@@ -371,7 +371,9 @@ class Review(Base):
     @staticmethod
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError))
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
     def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id
