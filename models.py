@@ -126,6 +126,7 @@ class Game(Base):
                           jitter=None,
                           base=10)
     def refresh_tags_and_rating(self, itch_api_key, force: bool = False):
+        print("[refresh_tags_and_rating] URL: " + self.url)
         req = urllib.request.Request(self.url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req, timeout=5) as url:
@@ -158,7 +159,9 @@ class Game(Base):
                           jitter=None,
                           base=10)
     def refresh_base_info(self, itch_api_key):
-        req = urllib.request.Request('https://api.itch.io/games/' + self.game_id)
+        url = 'https://api.itch.io/games/' + self.game_id
+        print("[refresh_base_info] URL: " + url)
+        req = urllib.request.Request(url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req, timeout=5) as url:
             game = json.load(url)
@@ -174,7 +177,9 @@ class Game(Base):
                           jitter=None,
                           base=10)
     def refresh_version(self, itch_api_key, force: bool = False):
-        req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
+        url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
+        print("[refresh_base_info] URL: " + url)
+        req = urllib.request.Request(url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req, timeout=5) as url:
             uploads = json.load(url)
@@ -259,9 +264,11 @@ class Game(Base):
         self.stats_menus = 0
         self.stats_options = 0
         self.stats_words = 0
+        url = self.url + '/file/' + str(upload_info['id'])
+        print("[get_script_stats] URL: " + url)
         # Download the game
         req_download = urllib.request.Request(
-            self.url + '/file/' + str(upload_info['id']),
+            url,
             method='POST'
         )
         req_download.add_header('Authorization', itch_api_key)
