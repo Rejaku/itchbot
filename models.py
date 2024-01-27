@@ -120,10 +120,15 @@ class Game(Base):
             'updated_at': self.updated_at
         }
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
     def refresh_tags_and_rating(self, itch_api_key, force: bool = False):
         req = urllib.request.Request(self.url)
         req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req) as url:
+        with urllib.request.urlopen(req, timeout=5) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
             if force or self.status not in ['Abandoned', 'Canceled']:
@@ -147,10 +152,15 @@ class Game(Base):
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
     def refresh_base_info(self, itch_api_key):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id)
         req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req) as url:
+        with urllib.request.urlopen(req, timeout=5) as url:
             game = json.load(url)
             if 'game' in game:
                 self.created_at = int(datetime.datetime.fromisoformat(
@@ -158,10 +168,15 @@ class Game(Base):
                 ).timestamp())
                 self.thumb_url = game['game']['cover_url']
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
     def refresh_version(self, itch_api_key, force: bool = False):
         req = urllib.request.Request('https://api.itch.io/games/' + self.game_id + '/uploads')
         req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req) as url:
+        with urllib.request.urlopen(req, timeout=5) as url:
             uploads = json.load(url)
             if 'uploads' in uploads:
                 self.platform_windows = 0
@@ -230,6 +245,11 @@ class Game(Base):
                 if latest_timestamp > 0:
                     self.updated_at = latest_timestamp
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
@@ -245,7 +265,7 @@ class Game(Base):
             method='POST'
         )
         req_download.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req_download) as download_url:
+        with urllib.request.urlopen(req_download, timeout=5) as download_url:
             download = json.load(download_url)
             if 'url' in download:
                 download_path = 'tmp/' + upload_info['filename']
