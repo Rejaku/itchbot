@@ -30,10 +30,9 @@ def refresh_version(itch_api_key, status=None):
     print('[refresh_version] Start')
     with Session() as session:
         if status:
-            game_query = session.query(Game)
-            for status in status.split(','):
-                game_query.filter(Game.status == status)
-            games = game_query.all()
+            games = session.query(Game) \
+                .filter(Game.status.in_(status)) \
+                .all()
         else:
             games = session.query(Game) \
                 .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.status != 'Update Error') \
@@ -121,10 +120,10 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
-        schedule.every(3).hours.do(refresh_version, self.itch_api_key, 'In development')
+        schedule.every(3).hours.do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.do(self.update_watchlist)
         schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
-        schedule.every().week.do(refresh_version, self.itch_api_key, 'Released,Prototype')
+        schedule.every().week.do(refresh_version, self.itch_api_key, ['Released', 'Prototype'])
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
