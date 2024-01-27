@@ -5,14 +5,13 @@ import json
 import os
 import re
 import subprocess
-import urllib.request
 import zipfile
 import tarfile
 import shutil
-from urllib.error import ContentTooShortError, HTTPError
 
 import backoff
 import requests
+from requests import RequestException
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
@@ -46,6 +45,7 @@ class Game(Base):
     rating = Column(Float)
     rating_count = Column(Integer)
     status = Column(String(50))
+    error = Column(Text)
     platform_windows = Column(Integer, nullable=False, default=0)
     platform_linux = Column(Integer, nullable=False, default=0)
     platform_mac = Column(Integer, nullable=False, default=0)
@@ -127,10 +127,8 @@ class Game(Base):
                           base=10)
     def refresh_tags_and_rating(self, itch_api_key):
         print("[refresh_tags_and_rating] URL: " + self.url)
-        req = urllib.request.Request(self.url)
-        req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req, timeout=5) as url:
-            html = url.read().decode("utf8")
+        with requests.get(self.url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+            html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             if self.status not in ['Abandoned', 'Canceled', 'Released']:
                 game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
@@ -161,10 +159,8 @@ class Game(Base):
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + self.game_id
         print("[refresh_base_info] URL: " + url)
-        req = urllib.request.Request(url)
-        req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req, timeout=5) as url:
-            game = json.load(url)
+        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+            game = json.loads(response.text)
             if 'game' in game:
                 self.created_at = int(datetime.datetime.fromisoformat(
                     game['game']['published_at']
@@ -179,10 +175,8 @@ class Game(Base):
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
         print("[refresh_base_info] URL: " + url)
-        req = urllib.request.Request(url)
-        req.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req, timeout=5) as url:
-            uploads = json.load(url)
+        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+            uploads = json.loads(response.text)
             if 'uploads' in uploads:
                 self.platform_windows = 0
                 self.platform_linux = 0
@@ -267,18 +261,15 @@ class Game(Base):
         url = self.url + '/file/' + str(upload_info['id'])
         print("[get_script_stats] URL: " + url)
         # Download the game
-        req_download = urllib.request.Request(
-            url,
-            method='POST'
-        )
-        req_download.add_header('Authorization', itch_api_key)
-        with urllib.request.urlopen(req_download, timeout=5) as download_url:
-            download = json.load(download_url)
+        with requests.post(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+            download = json.loads(response.text)
             if 'url' in download:
                 download_path = 'tmp/' + upload_info['filename']
                 try:
-                    urllib.request.urlretrieve(download['url'], download_path)
-                except (ContentTooShortError, HTTPError):
+                    file = requests.get(download['url'], allow_redirects=True)
+                    open(download_path, 'wb').write(file.content)
+                except RequestException as error:
+                    self.error = error
                     if os.path.isfile(download_path):
                         os.remove(download_path)
                     return
@@ -310,7 +301,6 @@ class Game(Base):
                             os.remove(download_path)
                         return
                 directory_listing = []
-                game_dir = []
                 game_dir_files = []
                 if os.path.isdir(extract_directory):
                     directory_listing = os.listdir(extract_directory)

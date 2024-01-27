@@ -2,8 +2,8 @@ import datetime
 import json
 import threading
 import time
-import urllib.request
 
+import requests
 import schedule
 
 from models import engine, Session, Base, Game
@@ -62,12 +62,12 @@ class Scheduler:
             page = 0
             while True:
                 page += 1
-                req = urllib.request.Request(
-                    'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page)
-                )
-                req.add_header('Authorization', self.itch_api_key)
-                with urllib.request.urlopen(req) as url:
-                    collection = json.load(url)
+                with requests.get(
+                        'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
+                        headers={'Authorization': self.itch_api_key},
+                        timeout=5
+                ) as response:
+                    collection = json.loads(response.text)
                     if len(collection['collection_games']) == 0:
                         print('No more!')
                         break
