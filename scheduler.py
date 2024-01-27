@@ -40,7 +40,8 @@ def refresh_version(itch_api_key, status=None):
         for game in games:
             try:
                 game.refresh_version(itch_api_key)
-            except Exception:
+            except Exception as exception:
+                print('[Update Error]', exception)
                 game.status = 'Update Error'
             session.commit()
             time.sleep(10)
