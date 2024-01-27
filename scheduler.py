@@ -18,9 +18,10 @@ def refresh_tags_and_rating(itch_api_key):
         for game in games:
             try:
                 game.refresh_tags_and_rating(itch_api_key)
+                game.error = None
             except Exception as exception:
                 print('[Update Error]', exception)
-                game.status = 'Update Error'
+                game.error = exception
             session.commit()
             time.sleep(10)
     print('[refresh_tags_and_rating] End')
@@ -35,14 +36,15 @@ def refresh_version(itch_api_key, status=None):
                 .all()
         else:
             games = session.query(Game) \
-                .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.status != 'Update Error') \
+                .filter(Game.status != 'Abandoned', Game.status != 'Canceled') \
                 .all()
         for game in games:
             try:
                 game.refresh_version(itch_api_key)
+                game.error = None
             except Exception as exception:
                 print('[Update Error]', exception)
-                game.status = 'Update Error'
+                game.error = exception
             session.commit()
             time.sleep(10)
     print('[refresh_version] End')
