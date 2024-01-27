@@ -38,6 +38,7 @@ def refresh_version(itch_api_key):
             except Exception:
                 game.status = 'Update Error'
             session.commit()
+            time.sleep(10)
     print('[refresh_version] End')
 
 
@@ -97,8 +98,7 @@ class Scheduler:
                             )
                             session.add(game)
                             session.commit()
-                        time.sleep(5)
-                    pass
+                time.sleep(10)
         print('[update_watchlist] End')
 
     def run(
