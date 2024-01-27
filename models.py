@@ -203,21 +203,23 @@ class Game(Base):
                         if 'p_android' in upload['traits']:
                             self.platform_android = 1
                             android_upload = upload
-                latest_timestamp = 0
-                # Force update check by setting updated_at to 0
+                # Force update check by setting latest_timestamp to 0
+                save_latest_timestamp = True
                 if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
-                    self.updated_at = 0
+                    latest_timestamp = 0
+                else:
+                    latest_timestamp = self.updated_at or 0
                 for upload in [linux_upload, windows_upload, android_upload]:
                     if upload is None:
                         continue
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                     timestamp = int(datetime.datetime.timestamp(element))
+                    # Take the newest timestamp from the uploads
                     if latest_timestamp < timestamp:
                         latest_timestamp = timestamp
-                    # Take the newest timestamp from the uploads
-                    if self.updated_at < timestamp:
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
+                                save_latest_timestamp = False
                                 latest_version = upload['build']['user_version']
                                 if self.latest_version == latest_version:
                                     continue
@@ -231,6 +233,7 @@ class Game(Base):
                                 # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
+                                    save_latest_timestamp = False
                                     latest_version = matches.group(0).rstrip('.')
                                     if self.latest_version == latest_version:
                                         continue
@@ -241,7 +244,7 @@ class Game(Base):
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = 1
-                if latest_timestamp > 0:
+                if save_latest_timestamp and latest_timestamp > 0:
                     self.updated_at = latest_timestamp
 
     @backoff.on_exception(backoff.expo,
