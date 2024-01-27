@@ -3,6 +3,7 @@ import json
 import threading
 import time
 
+import backoff
 import requests
 import schedule
 
@@ -56,57 +57,68 @@ class Scheduler:
         self.itch_api_key = None
         self.itch_collection_id = None
 
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
+    def update_watchlist_page(self, page: int):
+        with requests.get(
+                'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
+                headers={'Authorization': self.itch_api_key},
+                timeout=5
+        ) as response:
+            collection = json.loads(response.text)
+            if len(collection['collection_games']) == 0:
+                print('No more!')
+                return False
+
+            with Session() as session:
+                for collection_entry in collection['collection_games']:
+                    game = session.query(Game) \
+                        .filter(Game.service == 'itch', Game.game_id == collection_entry['game']['id']) \
+                        .first()
+                    # Update if already in DB
+                    if game:
+                        if collection_entry['game'].get('title') != game.name \
+                                or collection_entry['game'].get('short_text') != game.description \
+                                or collection_entry['game'].get('cover_url') != game.thumb_url:
+                            game.name = collection_entry['game'].get('title')
+                            game.description = collection_entry['game'].get('short_text')
+                            game.thumb_url = collection_entry['game'].get('cover_url')
+                            session.commit()
+                        if game.created_at == 0:
+                            game.created_at = int(datetime.datetime.fromisoformat(
+                                collection_entry['game']['published_at']
+                            ).timestamp())
+                            session.commit()
+                    else:
+                        game = Game(
+                            service='itch',
+                            game_id=collection_entry['game']['id'],
+                            name=collection_entry['game']['title'],
+                            description=collection_entry['game'].get('short_text'),
+                            url=collection_entry['game']['url'],
+                            thumb_url=collection_entry['game'].get('cover_url'),
+                            latest_version='unknown',
+                            created_at=int(datetime.datetime.fromisoformat(
+                                collection_entry['game']['published_at']
+                            ).timestamp()),
+                            updated_at=0
+                        )
+                        session.add(game)
+                        session.commit()
+            return True
+
     def update_watchlist(self):
         print('[update_watchlist] Start')
-        with Session() as session:
-            page = 0
-            while True:
-                page += 1
-                with requests.get(
-                        'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
-                        headers={'Authorization': self.itch_api_key},
-                        timeout=5
-                ) as response:
-                    collection = json.loads(response.text)
-                    if len(collection['collection_games']) == 0:
-                        print('No more!')
-                        break
-
-                    for collection_entry in collection['collection_games']:
-                        game = session.query(Game) \
-                            .filter(Game.service == 'itch', Game.game_id == collection_entry['game']['id']) \
-                            .first()
-                        # Update if already in DB
-                        if game:
-                            if collection_entry['game'].get('title') != game.name \
-                                    or collection_entry['game'].get('short_text') != game.description \
-                                    or collection_entry['game'].get('cover_url') != game.thumb_url:
-                                game.name = collection_entry['game'].get('title')
-                                game.description = collection_entry['game'].get('short_text')
-                                game.thumb_url = collection_entry['game'].get('cover_url')
-                                session.commit()
-                            if game.created_at == 0:
-                                game.created_at = int(datetime.datetime.fromisoformat(
-                                    collection_entry['game']['published_at']
-                                ).timestamp())
-                                session.commit()
-                        else:
-                            game = Game(
-                                service='itch',
-                                game_id=collection_entry['game']['id'],
-                                name=collection_entry['game']['title'],
-                                description=collection_entry['game'].get('short_text'),
-                                url=collection_entry['game']['url'],
-                                thumb_url=collection_entry['game'].get('cover_url'),
-                                latest_version='unknown',
-                                created_at=int(datetime.datetime.fromisoformat(
-                                    collection_entry['game']['published_at']
-                                ).timestamp()),
-                                updated_at=0
-                            )
-                            session.add(game)
-                            session.commit()
-                time.sleep(10)
+        page = 0
+        while True:
+            page += 1
+            has_more = self.update_watchlist_page(page)
+            if not has_more:
+                break
+            time.sleep(10)
         print('[update_watchlist] End')
 
     def run(
