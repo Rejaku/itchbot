@@ -125,14 +125,14 @@ class Game(Base):
                            requests.exceptions.ConnectionError),
                           jitter=None,
                           base=10)
-    def refresh_tags_and_rating(self, itch_api_key, force: bool = False):
+    def refresh_tags_and_rating(self, itch_api_key):
         print("[refresh_tags_and_rating] URL: " + self.url)
         req = urllib.request.Request(self.url)
         req.add_header('Authorization', itch_api_key)
         with urllib.request.urlopen(req, timeout=5) as url:
             html = url.read().decode("utf8")
             soup = BeautifulSoup(html, 'html.parser')
-            if force or self.status not in ['Abandoned', 'Canceled']:
+            if self.status not in ['Abandoned', 'Canceled', 'Released']:
                 game_info = soup.find("div", {"class": "game_info_panel_widget"}).find_all("a", href=True)
                 if game_info:
                     self.status = game_info[0].text
