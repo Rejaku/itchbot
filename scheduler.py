@@ -135,10 +135,10 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
-        schedule.every(3).hours.do(refresh_version, self.itch_api_key, ['In development'])
-        schedule.every().day.do(self.update_watchlist)
-        schedule.every().day.do(refresh_tags_and_rating, self.itch_api_key)
-        schedule.every().week.do(refresh_version, self.itch_api_key, ['Released', 'Prototype'])
+        schedule.every(3).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
+        schedule.every().day.at("00:00").do(self.update_watchlist)
+        schedule.every().day.at("03:00").do(refresh_tags_and_rating, self.itch_api_key)
+        schedule.every().monday.at("06:00").do(refresh_version, self.itch_api_key, ['Released', 'Prototype'])
         while True:
             # Checks whether a scheduled task
             # is pending to run or not
