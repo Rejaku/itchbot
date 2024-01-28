@@ -174,7 +174,7 @@ class Game(Base):
                           base=10)
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
-        print("[refresh_base_info] URL: " + url)
+        print("[refresh_version] URL: " + url)
         with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
             uploads = json.loads(response.text)
             if 'uploads' in uploads:
