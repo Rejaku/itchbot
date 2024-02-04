@@ -7,6 +7,7 @@ import backoff
 import requests
 import schedule
 
+import models
 from models import engine, Session, Base, Game
 
 Base.metadata.create_all(engine)
@@ -135,6 +136,7 @@ class Scheduler:
 
     def scheduler(self):
         print('[scheduler] Start')
+        schedule.every().hour.at("00:30").do(models.Review.import_reviews)
         schedule.every(3).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating, self.itch_api_key)
