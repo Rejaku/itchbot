@@ -522,7 +522,8 @@ class Review(Base):
     def get_game_id(url):
         print("[get_game_id] URL: " + url)
         with requests.get(url, timeout=5) as response:
-            if response.status_code != 200:
+            if response.status_code == 404:
+                print("[get_game_id] 404")
                 return None
 
             html = response.text
