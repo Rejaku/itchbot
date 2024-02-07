@@ -396,7 +396,7 @@ class Review(Base):
         }
 
     @staticmethod
-    def import_reviews():
+    def import_latest_reviews():
         ITCH_USER = os.environ['ITCH_USER']
         ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
 
@@ -477,11 +477,7 @@ class Review(Base):
                     if existing_review is None:
                         new_review = Review(event_id, updated_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review_text)
                         session.add(new_review)
-                    else:
-                        existing_review.updated_at = updated_at
-                        existing_review.rating = rating
-                        existing_review.review = review_text
-                    session.commit()
+                        session.commit()
                     if start_event_id is None or start_event_id > event_id:
                         start_event_id = event_id
             if start_event_id is None and previous_start_event_id is not None:
