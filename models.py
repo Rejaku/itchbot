@@ -495,6 +495,7 @@ class Review(Base):
                 game_id = Game.get_game_id(review.game_url)
                 session.update(Review).where(Review.game_url == review.game_url, Review.game_id is None).values(game_id=game_id)
                 session.commit()
+                time.sleep(10)
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
