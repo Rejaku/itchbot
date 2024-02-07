@@ -493,10 +493,14 @@ class Review(Base):
             reviews = session.query(Review).filter(Review.game_id == None).group_by(Review.game_url).all()
             for review in reviews:
                 game_id = Review.get_game_id(review.game_url)
-                session.query(Review). \
-                    filter(Review.game_id == None, Review.game_url == review.game_url). \
-                    update({'game_id': game_id})
-                session.commit()
+                if game_id is not None:
+                    session.query(Review). \
+                        filter(Review.game_id == None, Review.game_url == review.game_url). \
+                        update({'game_id': game_id})
+                else:
+                    session.query(Review). \
+                        filter(Review.game_id == None, Review.game_url == review.game_url). \
+                        update({'hidden': 1})
                 session.commit()
                 time.sleep(10)
 
@@ -509,6 +513,9 @@ class Review(Base):
     def get_game_id(url):
         print("[get_game_id] URL: " + url)
         with requests.get(url, timeout=5) as response:
+            if response.status_code != 200:
+                return None
+
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             itch_path = soup.find("meta", {"name": "itch:path"})['content']
