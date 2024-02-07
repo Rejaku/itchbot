@@ -18,6 +18,12 @@
         [data-column-id="rating"] {
             width: 120px;
         }
+        [data-column-id="user"] {
+            width: 200px;
+        }
+        [data-column-id="itch"] {
+            width: 150px;
+        }
         th.gridjs-th-sort .gridjs-th-content {
             width: min-content;
             white-space: initial;
@@ -91,7 +97,7 @@
                 }
             },
             {
-                id: 'itch', name: 'User Reviews', formatter: (cell, row) => {
+                id: 'user', name: 'User Reviews', formatter: (cell, row) => {
                     return gridjs.html('<a href="/users/' + row.cells[1].data + '">All reviews by user</a>');
                 }, sort: false
             },
