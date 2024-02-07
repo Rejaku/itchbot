@@ -124,7 +124,7 @@ def api_users_route(user_id):
             for s in sort.split(','):
                 direction = s[0]
                 name = s[1:]
-                if name not in ['updated_at', 'rating', 'review']:
+                if name not in ['updated_at', 'game_name', 'rating', 'review']:
                     name = 'updated_at'
                 col = getattr(Review, name)
                 if direction == '-':

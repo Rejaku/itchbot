@@ -15,6 +15,9 @@
         [data-column-id="updated_at"] {
             width: 205px;
         }
+        [data-column-id="game_name"] {
+            width: 450px;
+        }
         [data-column-id="rating"] {
             width: 120px;
         }
@@ -73,6 +76,7 @@
 
     new gridjs.Grid({
         columns: [
+            {id: 'event_id', name: 'Event ID', sort: false, hidden: true},
             {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
             {
                 id: 'updated_at', name: 'Date', formatter: (cell) => {
@@ -81,7 +85,7 @@
             },
             {
                 id: 'game_name', name: 'Game Name', formatter: (cell, row) => {
-                    return gridjs.html('<a href="/reviews/' + row.cells[0].data + '">' + cell + '</a>');
+                    return gridjs.html('<a href="/reviews/' + row.cells[1].data + '">' + cell + '</a>');
                 }
             },
             {
@@ -93,6 +97,11 @@
                 id: 'review', name: 'Review', formatter: (cell) => {
                     return cell ? gridjs.html(cell) : '';
                 }
+            },
+            {
+                id: 'itch', name: 'Source', formatter: (cell, row) => {
+                    return gridjs.html('<a href="https://itch.io/event/' + row.cells[0].data + '">Read on itch</a>');
+                }, sort: false
             }
         ],
         server: {
@@ -108,7 +117,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['game_id', 'updated_at', 'game_name', 'rating', 'review'];
+                    const columnIds = ['event_id', 'game_id', 'updated_at', 'game_name', 'rating', 'review'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
