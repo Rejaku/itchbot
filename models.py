@@ -371,6 +371,7 @@ class Review(Base):
     user_name = Column(String(100), nullable=False)
     rating = Column(Integer, nullable=False)
     review = Column(Text)
+    hidden = Column(BOOLEAN, default=0)
 
     def __init__(self, event_id, created_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review, hidden=0):
         self.event_id = event_id
