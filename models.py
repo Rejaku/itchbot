@@ -61,12 +61,13 @@ class Game(Base):
     game_engine = Column(String(50))
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
+    nsfw = Column(BOOLEAN, default=0)
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
                  platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown',
-                 created_at=0, updated_at=0, hidden=0):
+                 created_at=0, updated_at=0, hidden=0, nsfw=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -93,6 +94,7 @@ class Game(Base):
         self.created_at = created_at
         self.updated_at = updated_at
         self.hidden = hidden
+        self.nsfw = nsfw
 
     def to_dict(self):
         return {
@@ -121,7 +123,8 @@ class Game(Base):
             'stats_words': self.stats_words,
             'game_engine': self.game_engine,
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
+            'nsfw': self.nsfw
         }
 
     @backoff.on_exception(backoff.expo,

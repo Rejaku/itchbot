@@ -57,7 +57,7 @@ def api_data_route():
             for s in sort.split(','):
                 direction = s[0]
                 name = s[1:]
-                if name not in ['name', 'rating', 'created_at', 'updated_at', 'stats_menus', 'stats_words', 'game_engine', 'status']:
+                if name not in ['name', 'rating', 'created_at', 'updated_at', 'stats_menus', 'stats_words', 'game_engine', 'status', 'nsfw']:
                     name = 'name'
                 col = getattr(Game, name)
                 if direction == '-':
