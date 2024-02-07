@@ -427,7 +427,7 @@ class Review(Base):
             if start_event_id is None or start_event_id < end_event_id:
                 break
             print('[reviews] Loop end: ' + str(start_event_id) + "\n\n")
-            time.sleep(10)
+            time.sleep(30)
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
