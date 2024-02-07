@@ -16,6 +16,7 @@ HYPERLINK = '<a href="{}">{}</a>'
 def games_route():
     return render_template('server_table.html')
 
+
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
     with Session() as session:
@@ -24,15 +25,17 @@ def reviews_route(game_id):
         if game:
             game_name = game.name
         else:
-            review = session.query(Review).filter(Review.game_id == game_id).order_by(Review.created_at.desc()).first()
+            review = session.query(Review).filter(Review.hidden == 0, Review.game_id == game_id).order_by(Review.created_at.desc()).first()
             if review:
                 game_name = review.game_name
 
     return render_template('review_table.html', game_id=game_id, game_name=game_name)
 
+
 @app.route('/users/<int:user_id>')
 def users_route(user_id):
     return render_template('user_table.html', user_id=user_id)
+
 
 @app.route('/api/data')
 def api_data_route():
@@ -42,7 +45,9 @@ def api_data_route():
         # search filter
         search = request.args.get('search')
         if search:
-            games = games.filter(Game.name.like(f'%{search}%'))
+            games = games.filter(Game.hidden == 0, Game.name.like(f'%{search}%'))
+        else:
+            games = games.filter(Game.hidden == 0)
         total = games.count()
 
         # sorting
@@ -75,10 +80,11 @@ def api_data_route():
     # response
     return result
 
+
 @app.route('/api/reviews/<game_id>')
 def api_reviews_route(game_id):
     with Session() as session:
-        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.review != '').group_by(Review.user_id)
+        reviews = session.query(Review).filter(Review.hidden == 0, Review.game_id == int(game_id), Review.review != '')
         total = reviews.count()
 
         # sorting
@@ -146,6 +152,7 @@ def api_users_route(user_id):
 
     # response
     return result
+
 
 if __name__ == "__main__":
     from waitress import serve

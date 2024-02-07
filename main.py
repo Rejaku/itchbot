@@ -35,7 +35,7 @@ async def notify_about_updates():
         print('[notify_about_updates] User loop')
         for user in users:
             start_time = time.time()
-            games = session.query(Game).filter(Game.updated_at > user.processed_at).order_by('name').all()
+            games = session.query(Game).filter(Game.hidden == 0, Game.updated_at > user.processed_at).order_by('name').all()
             if games:
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
                 result = f'Found {len(games)} new updates:\n'
@@ -87,11 +87,11 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
         with Session() as session:
             if force:
                 games = session.query(Game) \
-                    .filter(Game.name.contains(name)) \
+                    .filter(Game.hidden == 0, Game.name.contains(name)) \
                     .all()
             else:
                 games = session.query(Game) \
-                    .filter(Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
+                    .filter(Game.hidden == 0, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
                     .all()
             matches = len(games)
             if matches:
@@ -121,7 +121,7 @@ async def search(ctx, name):
         await ctx.defer()
         with Session as session:
             games = session.query(Game) \
-                .filter(Game.name.contains(name)) \
+                .filter(Game.hidden == 0, Game.name.contains(name)) \
                 .all()
             matches = len(games)
             if matches:

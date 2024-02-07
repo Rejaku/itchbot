@@ -14,7 +14,7 @@ import backoff
 import requests
 from requests import RequestException
 from requests_html import HTMLSession
-from sqlalchemy import create_engine, Column, String, Integer, Float, Text
+from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN
 from sqlalchemy.orm import declarative_base, sessionmaker
 from bs4 import BeautifulSoup
 from shlex import quote
@@ -34,6 +34,7 @@ class Game(Base):
     __tablename__ = 'games'
 
     id = Column(Integer, primary_key=True)
+    hidden = Column(BOOLEAN, default=0)
     service = Column(String(50), nullable=False)
     game_id = Column(String(50), nullable=False)
     name = Column(String(200), nullable=False)
@@ -65,7 +66,7 @@ class Game(Base):
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
                  platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown',
-                 created_at=0, updated_at=0):
+                 created_at=0, updated_at=0, hidden=0):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -91,6 +92,7 @@ class Game(Base):
         self.game_engine = game_engine
         self.created_at = created_at
         self.updated_at = updated_at
+        self.hidden = hidden
 
     def to_dict(self):
         return {
