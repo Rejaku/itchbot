@@ -112,7 +112,7 @@ def api_reviews_route(game_id):
     return result
 
 @app.route('/api/users/<user_id>')
-def api_reviews_route(user_id):
+def api_users_route(user_id):
     with Session() as session:
         reviews = session.query(Review).filter(Review.user_id == int(user_id), Review.review != '')
         total = reviews.count()
