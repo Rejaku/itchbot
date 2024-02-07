@@ -30,6 +30,10 @@ def reviews_route(game_id):
 
     return render_template('review_table.html', game_id=game_id, game_name=game_name)
 
+@app.route('/users/<int:user_id>')
+def users_route(user_id):
+    return render_template('user_table.html', user_id=user_id)
+
 @app.route('/api/data')
 def api_data_route():
     with Session() as session:
@@ -75,6 +79,42 @@ def api_data_route():
 def api_reviews_route(game_id):
     with Session() as session:
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.review != '').group_by(Review.user_id)
+        total = reviews.count()
+
+        # sorting
+        sort = request.args.get('sort') or '-updated_at'
+        if sort:
+            order = []
+            for s in sort.split(','):
+                direction = s[0]
+                name = s[1:]
+                if name not in ['updated_at', 'user_id', 'rating', 'review']:
+                    name = 'updated_at'
+                col = getattr(Review, name)
+                if direction == '-':
+                    col = col.desc()
+                order.append(col)
+            if order:
+                reviews = reviews.order_by(*order)
+
+        # pagination
+        start = request.args.get('start', type=int, default=-1)
+        length = request.args.get('length', type=int, default=-1)
+        if start != -1 and length != -1:
+            reviews = reviews.offset(start).limit(length)
+
+        result = {
+            'data': [review.to_dict() for review in reviews],
+            'total': total,
+        }
+
+    # response
+    return result
+
+@app.route('/api/users/<user_id>')
+def api_reviews_route(user_id):
+    with Session() as session:
+        reviews = session.query(Review).filter(Review.user_id == int(user_id), Review.review != '')
         total = reviews.count()
 
         # sorting

@@ -386,6 +386,7 @@ class Review(Base):
         return {
             'event_id': self.event_id,
             'updated_at': self.updated_at,
+            'user_id': self.user_id,
             'rating': self.rating,
             'review': self.review
         }

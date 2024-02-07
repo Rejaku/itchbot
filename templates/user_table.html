@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>Reviews for "{{ game_name }}"</title>
+    <title>Reviews by "{{ user_id }}"</title>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -58,7 +58,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews for "{{ game_name }}"</h1>
+    <h1>Reviews by "{{ user_id }}"</h1>
     <hr>
     <p>
         Ratings without a review are not shown below.
@@ -73,8 +73,6 @@
 
     new gridjs.Grid({
         columns: [
-            {id: 'event_id', name: 'Event ID', sort: false, hidden: true},
-            {id: 'user_id', name: 'User ID', sort: false, hidden: true},
             {
                 id: 'updated_at', name: 'Date', formatter: (cell) => {
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
@@ -89,20 +87,10 @@
                 id: 'review', name: 'Review', formatter: (cell) => {
                     return cell ? gridjs.html(cell) : '';
                 }
-            },
-            {
-                id: 'itch', name: 'User Reviews', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="/users/' + row.cells[1].data + '">' + cell + '</a>');
-                }, sort: false
-            },
-            {
-                id: 'itch', name: 'Source', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="https://itch.io/event/' + row.cells[0].data + '">' + cell + '</a>');
-                }, sort: false
             }
         ],
         server: {
-            url: '/api/reviews/{{ game_id }}',
+            url: '/api/users/{{ user_id }}',
             then: results => results.data,
             total: results => results.total,
         },
@@ -114,7 +102,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['event_id', 'user_id', 'updated_at', 'rating', 'review'];
+                    const columnIds = ['updated_at', 'rating', 'review'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
