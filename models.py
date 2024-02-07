@@ -500,7 +500,7 @@ class Review(Base):
                 else:
                     session.query(Review). \
                         filter(Review.game_id == None, Review.game_url == review.game_url). \
-                        update({'hidden': 1})
+                        update({'hidden': True})
                 session.commit()
                 time.sleep(10)
 
