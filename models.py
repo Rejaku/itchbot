@@ -132,9 +132,9 @@ class Game(Base):
                            requests.exceptions.ConnectionError),
                           jitter=None,
                           base=10)
-    def refresh_tags_and_rating(self, itch_api_key):
+    def refresh_tags_and_rating(self):
         print("[refresh_tags_and_rating] URL: " + self.url)
-        with requests.get(self.url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+        with requests.get(self.url, timeout=5) as response:
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             if self.status not in ['Abandoned', 'Canceled', 'Released']:
@@ -157,6 +157,11 @@ class Game(Base):
                     self.languages = tr.text.strip()[9:]
                 if tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
+            nsfw = soup.find("div", {"class": "content_warning_inner"})
+            if nsfw:
+                self.nsfw = 1
+            else:
+                self.nsfw = 0
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,

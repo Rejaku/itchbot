@@ -13,13 +13,13 @@ from models import engine, Session, Base, Game
 Base.metadata.create_all(engine)
 
 
-def refresh_tags_and_rating(itch_api_key):
+def refresh_tags_and_rating():
     print('[refresh_tags_and_rating] Start')
     with Session() as session:
         games = session.query(Game).filter(Game.hidden == 0).all()
         for game in games:
             try:
-                game.refresh_tags_and_rating(itch_api_key)
+                game.refresh_tags_and_rating()
                 game.error = None
             except Exception as exception:
                 print('[Update Error]', exception)
@@ -139,7 +139,7 @@ class Scheduler:
         schedule.every(15).minutes.do(models.Review.import_latest_reviews)
         schedule.every(3).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.at("00:00").do(self.update_watchlist)
-        schedule.every().day.at("03:00").do(refresh_tags_and_rating, self.itch_api_key)
+        schedule.every().day.at("03:00").do(refresh_tags_and_rating)
         schedule.every().monday.at("06:00").do(refresh_version, self.itch_api_key, ['Released', 'Prototype'])
         while True:
             # Checks whether a scheduled task

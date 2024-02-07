@@ -102,7 +102,7 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
                         session.commit()
                         time.sleep(10)
                     if refresh_tags:
-                        game.refresh_tags_and_rating(ITCH_API_KEY)
+                        game.refresh_tags_and_rating()
                         session.commit()
                         time.sleep(10)
                     if refresh_version:
