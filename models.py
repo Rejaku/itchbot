@@ -131,7 +131,7 @@ class Game(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def refresh_tags_and_rating(self):
         print("[refresh_tags_and_rating] URL: " + self.url)
         with requests.get(self.url, timeout=5) as response:
@@ -167,7 +167,7 @@ class Game(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + self.game_id
         print("[refresh_base_info] URL: " + url)
@@ -183,7 +183,7 @@ class Game(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
         print("[refresh_version] URL: " + url)
@@ -263,7 +263,7 @@ class Game(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
@@ -442,7 +442,7 @@ class Review(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def import_reviews(request_session, start_event_id = None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id
@@ -511,14 +511,14 @@ class Review(Base):
                         filter(Review.game_id == None, Review.game_url == review.game_url). \
                         update({'hidden': True})
                 session.commit()
-                time.sleep(10)
+                time.sleep(20)
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=10)
+                          base=20)
     def get_game_id(url):
         print("[get_game_id] URL: " + url)
         with requests.get(url, timeout=5) as response:
