@@ -372,7 +372,7 @@ class Review(Base):
     rating = Column(Integer, nullable=False)
     review = Column(Text)
 
-    def __init__(self, event_id, created_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review):
+    def __init__(self, event_id, created_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review, hidden=0):
         self.event_id = event_id
         self.created_at = created_at
         self.updated_at = updated_at
@@ -383,6 +383,7 @@ class Review(Base):
         self.user_name = user_name
         self.rating = rating
         self.review = review
+        self.hidden = hidden
 
     def to_dict(self):
         return {
@@ -484,3 +485,29 @@ class Review(Base):
                 start_event_id = previous_start_event_id - 1
 
         return start_event_id
+
+
+    @staticmethod
+    def fix_missing_game_ids():
+        with Session() as session:
+            reviews = session.query(Review).filter(Review.game_id is None).group_by(Review.game_url).all()
+            for review in reviews:
+                game_id = Game.get_game_id(review.game_url)
+                session.update(Review).where(Review.game_url == review.game_url, Review.game_id is None).values(game_id=game_id)
+                session.commit()
+
+    @staticmethod
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError),
+                          jitter=None,
+                          base=10)
+    def get_game_id(url):
+        print("[get_game_id] URL: " + url)
+        with requests.get(url, timeout=5) as response:
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            game_id = soup.find("meta", {"name": "itch:path"})['content']
+            print("[get_game_id] Game ID: " + game_id)
+
+            return game_id
