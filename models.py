@@ -387,6 +387,8 @@ class Review(Base):
             'event_id': self.event_id,
             'updated_at': self.updated_at,
             'user_id': self.user_id,
+            'game_id': self.game_id,
+            'game_name': self.game_name,
             'rating': self.rating,
             'review': self.review
         }

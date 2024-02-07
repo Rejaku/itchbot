@@ -73,9 +73,15 @@
 
     new gridjs.Grid({
         columns: [
+            {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
             {
                 id: 'updated_at', name: 'Date', formatter: (cell) => {
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
+                }
+            },
+            {
+                id: 'game_name', name: 'Game Name', formatter: (cell, row) => {
+                    return gridjs.html('<a href="/reviews/' + row.cells[0].data + '">' + cell + '</a>');
                 }
             },
             {
@@ -102,7 +108,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['updated_at', 'rating', 'review'];
+                    const columnIds = ['game_id', 'updated_at', 'game_name', 'rating', 'review'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },

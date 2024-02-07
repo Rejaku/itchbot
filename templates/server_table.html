@@ -78,7 +78,7 @@
             {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
             {
                 id: 'name', name: 'Name', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="' + row.cells[0].data + '">' + cell + '</a>');
+                    return gridjs.html('<a href="' + row.cells[0].data + '">' + cell + '</a>');
                 }
             },
             {
@@ -89,12 +89,12 @@
             {id: 'description', name: 'Description', sort: false},
             {
                 id: 'latest_version', name: 'Latest Version', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="' + row.cells[1].data + '">' + cell + '</a>');
+                    return gridjs.html('<a href="' + row.cells[1].data + '">' + cell + '</a>');
                 }, sort: false
             },
             {
                 id: 'rating', name: 'Rating', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="/reviews/' + row.cells[10].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
+                    return gridjs.html('<a href="/reviews/' + row.cells[10].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
                 }
             },
             {

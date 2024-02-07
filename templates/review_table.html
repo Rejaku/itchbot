@@ -92,12 +92,12 @@
             },
             {
                 id: 'itch', name: 'User Reviews', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="/users/' + row.cells[1].data + '">' + cell + '</a>');
+                    return gridjs.html('<a href="/users/' + row.cells[1].data + '">All reviews by user</a>');
                 }, sort: false
             },
             {
                 id: 'itch', name: 'Source', formatter: (cell, row) => {
-                    return gridjs.html('<a target="_blank" href="https://itch.io/event/' + row.cells[0].data + '">' + cell + '</a>');
+                    return gridjs.html('<a href="https://itch.io/event/' + row.cells[0].data + '">Read on itch</a>');
                 }, sort: false
             }
         ],
