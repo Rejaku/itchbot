@@ -507,7 +507,8 @@ class Review(Base):
         with requests.get(url, timeout=5) as response:
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
-            game_id = soup.find("meta", {"name": "itch:path"})['content']
+            itch_path = soup.find("meta", {"name": "itch:path"})['content']
+            game_id = itch_path.split('/')[-1]
             print("[get_game_id] Game ID: " + game_id)
 
             return game_id
