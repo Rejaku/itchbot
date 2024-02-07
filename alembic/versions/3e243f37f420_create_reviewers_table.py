@@ -24,7 +24,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.FLOAT, nullable=False),
         sa.Column('user_id', sa.Integer),
     )
-    op.create_index('idx_reviewers_user_id', 'reviews', ['user_id'], unique=True)
+    op.create_index('idx_reviewers_user_id', 'reviewers', ['user_id'], unique=True)
 
 
 def downgrade() -> None:
