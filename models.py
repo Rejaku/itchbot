@@ -490,10 +490,10 @@ class Review(Base):
     @staticmethod
     def fix_missing_game_ids():
         with Session() as session:
-            reviews = session.query(Review).filter(Review.game_id is None).group_by(Review.game_url).all()
+            reviews = session.query(Review).filter(Review.game_id == None).group_by(Review.game_url).all()
             for review in reviews:
                 game_id = Game.get_game_id(review.game_url)
-                session.update(Review).where(Review.game_url == review.game_url, Review.game_id is None).values(game_id=game_id)
+                session.update(Review).where(Review.game_url == review.game_url, Review.game_id == None).values(game_id=game_id)
                 session.commit()
                 time.sleep(10)
 
