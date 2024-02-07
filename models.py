@@ -492,7 +492,7 @@ class Review(Base):
         with Session() as session:
             reviews = session.query(Review).filter(Review.game_id == None).group_by(Review.game_url).all()
             for review in reviews:
-                game_id = Game.get_game_id(review.game_url)
+                game_id = Review.get_game_id(review.game_url)
                 session.update(Review).where(Review.game_url == review.game_url, Review.game_id == None).values(game_id=game_id)
                 session.commit()
                 time.sleep(10)
