@@ -528,7 +528,9 @@ class Review(Base):
             if response.status_code == 404:
                 print("[get_game_id] Status 404")
                 return None
-            if response.status_code != 200:
+            if response.status_code == 429:
+                print("[get_game_id] Rate limit, Wait: " + response.headers["Retry-After"])
+            elif response.status_code != 200:
                 print("[get_game_id] Status 200" + str(response.status_code))
                 raise RequestException("Status code not 200, retrying")
 
