@@ -517,20 +517,29 @@ class Review(Base):
     @staticmethod
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RequestException,
+                           RuntimeError),
                           jitter=None,
                           base=20)
     def get_game_id(url):
         print("[get_game_id] URL: " + url)
         with requests.get(url, timeout=5) as response:
             if response.status_code == 404:
-                print("[get_game_id] 404")
+                print("[get_game_id] Status 404")
                 return None
+            if response.status_code != 200:
+                print("[get_game_id] Status 200" + str(response.status_code))
+                raise RequestException("Status code not 200, retrying")
 
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
-            itch_path = soup.find("meta", {"name": "itch:path"})['content']
-            game_id = itch_path.split('/')[-1]
-            print("[get_game_id] Game ID: " + game_id)
+            itch_path = soup.find("meta", {"name": "itch:path"})
+            if itch_path:
+                game_id = itch_path['content'].split('/')[-1]
+                print("[get_game_id] Game ID: " + game_id)
+            else:
+                print("[get_game_id] Could not find game ID, retrying")
+                raise RuntimeError("Could not find game ID")
 
             return game_id
