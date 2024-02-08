@@ -497,22 +497,28 @@ class Review(Base):
 
 
     @staticmethod
-    def fix_missing_game_ids():
+    def migrate_to_games_table():
         with Session() as session:
-            reviews = session.query(Review).filter(Review.game_id == None, Review.hidden == 0).group_by(Review.game_url).all()
+            reviews = session.query(Review).filter(Review.game_id != None).group_by(Review.game_id).all()
             for review in reviews:
-                game_id = Review.get_game_id(review.game_url)
-                if game_id is not None:
-                    session.query(Review). \
-                        filter(Review.game_id == None, Review.game_url == review.game_url). \
-                        update({'game_id': game_id})
-                else:
-                    session.query(Review). \
-                        filter(Review.game_id == None, Review.hidden == 0, Review.game_url == review.game_url). \
-                        update({'hidden': True})
-                session.commit()
-                time.sleep(20)
+                game = session.query(Game).filter(Game.game_id == Review.game_id).first()
+                if game is None:
+                    game = Game(
+                        service='itch',
+                        description='',
+                        thumb_url='',
+                        game_id=review.game_id,
+                        name=review.game_name,
+                        url=review.game_url,
+                        hidden=1
+                    )
+                    session.add(game)
+                    session.commit()
 
+                session.query(Review). \
+                    filter(Review.game_id == review.game_id). \
+                    update({'game_id': None})
+                session.commit()
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
