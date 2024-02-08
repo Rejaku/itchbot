@@ -503,7 +503,7 @@ class Review(Base):
             reviews = session.query(Review).filter(Review.game_id != None).group_by(Review.game_id).all()
             for review in reviews:
                 print("[migrate_to_games_table] Review: " + str(review.game_id))
-                game = session.query(Game).filter(Game.game_id == Review.game_id).first()
+                game = session.query(Game).filter(Game.game_id == review.game_id).first()
                 if game is None:
                     print("[migrate_to_games_table] Game not found, creating")
                     name_game = Game(
@@ -518,10 +518,10 @@ class Review(Base):
                     session.add(name_game)
                     session.commit()
 
-                #session.query(Review). \
-                #    filter(Review.game_id == review.game_id). \
-                #    update({'game_id': None})
-                #session.commit()
+                session.query(Review). \
+                    filter(Review.game_id == review.game_id). \
+                    update({'game_id': None})
+                session.commit()
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
