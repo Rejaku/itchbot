@@ -499,12 +499,12 @@ class Review(Base):
     @staticmethod
     def fix_missing_game_ids():
         with Session() as session:
-            reviews = session.query(Review).filter(Review.game_id == None).group_by(Review.game_url).all()
+            reviews = session.query(Review).filter(Review.game_id == None, Review.hidden == 0).group_by(Review.game_url).all()
             for review in reviews:
                 game_id = Review.get_game_id(review.game_url)
                 if game_id is not None:
                     session.query(Review). \
-                        filter(Review.game_id == None, Review.hidden == 0, Review.game_url == review.game_url). \
+                        filter(Review.game_id == None, Review.game_url == review.game_url). \
                         update({'game_id': game_id})
                 else:
                     session.query(Review). \
