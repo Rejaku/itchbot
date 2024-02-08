@@ -542,7 +542,7 @@ class Review(Base):
                 game_id = itch_path['content'].split('/')[-1]
                 print("[get_game_id] Game ID: " + game_id)
             else:
-                print("[get_game_id] Could not find game ID, retrying")
+                print("[get_game_id] Could not find game ID, retrying: " + html)
                 raise RuntimeError("Could not find game ID")
 
             return game_id
