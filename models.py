@@ -504,14 +504,15 @@ class Review(Base):
                 game_id = Review.get_game_id(review.game_url)
                 if game_id is not None:
                     session.query(Review). \
-                        filter(Review.game_id == None, Review.game_url == review.game_url). \
+                        filter(Review.game_id == None, Review.hidden == 0, Review.game_url == review.game_url). \
                         update({'game_id': game_id})
                 else:
                     session.query(Review). \
-                        filter(Review.game_id == None, Review.game_url == review.game_url). \
+                        filter(Review.game_id == None, Review.hidden == 0, Review.game_url == review.game_url). \
                         update({'hidden': True})
                 session.commit()
                 time.sleep(20)
+
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
