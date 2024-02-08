@@ -499,11 +499,14 @@ class Review(Base):
     @staticmethod
     def migrate_to_games_table():
         with Session() as session:
+            print("[migrate_to_games_table] Start")
             reviews = session.query(Review).filter(Review.game_id != None).group_by(Review.game_id).all()
             for review in reviews:
+                print("[migrate_to_games_table] Review: " + str(review.game_id))
                 game = session.query(Game).filter(Game.game_id == Review.game_id).first()
                 if game is None:
-                    game = Game(
+                    print("[migrate_to_games_table] Game not found, creating")
+                    name_game = Game(
                         service='itch',
                         description='',
                         thumb_url='',
@@ -512,13 +515,13 @@ class Review(Base):
                         url=review.game_url,
                         hidden=1
                     )
-                    session.add(game)
+                    session.add(name_game)
                     session.commit()
 
-                session.query(Review). \
-                    filter(Review.game_id == review.game_id). \
-                    update({'game_id': None})
-                session.commit()
+                #session.query(Review). \
+                #    filter(Review.game_id == review.game_id). \
+                #    update({'game_id': None})
+                #session.commit()
 
     @staticmethod
     @backoff.on_exception(backoff.expo,
