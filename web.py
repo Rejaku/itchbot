@@ -120,8 +120,9 @@ def api_reviews_route(game_id):
 @app.route('/api/users/<user_id>')
 def api_users_route(user_id):
     with Session() as session:
-        reviews = session.query(Review, Game).filter(
-            Review.game_id == Game.game_id,
+        reviews = session.query(Review, Game).join(
+            Game, Review.game_id == Game.game_id
+        ).filter(
             Review.user_id == int(user_id),
             Review.review != ''
         )

@@ -14,8 +14,8 @@ import backoff
 import requests
 from requests import RequestException
 from requests_html import HTMLSession
-from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from bs4 import BeautifulSoup
 from shlex import quote
 
@@ -62,6 +62,7 @@ class Game(Base):
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
     nsfw = Column(BOOLEAN, default=0)
+    reviews = relationship("Review", back_populates="game")
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
@@ -398,6 +399,7 @@ class Reviewer(Base):
     user_name = Column(String(100), nullable=False)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer, nullable=False)
+    reviews = relationship("Review", back_populates="reviewer")
 
     def __init__(self, user_id, user_name, created_at=0, updated_at=0):
         self.user_id = user_id
@@ -419,11 +421,13 @@ class Review(Base):
     event_id = Column(Integer, nullable=False)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer, nullable=False)
-    game_id = Column(Integer)
-    user_id = Column(Integer)
+    game_id = Column(Integer, ForeignKey('games.game_id'))
+    user_id = Column(Integer, ForeignKey('reviewers.user_id'))
     rating = Column(Integer, nullable=False)
     review = Column(Text)
     hidden = Column(BOOLEAN, default=0)
+    game = relationship("Game", back_populates="reviews")
+    reviewer = relationship("Reviewer", back_populates="reviews")
 
     def __init__(self, event_id, created_at, updated_at, game_id, user_id, rating, review, hidden=0):
         self.event_id = event_id
