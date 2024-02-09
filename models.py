@@ -367,7 +367,7 @@ class User(Base):
 
 
 class Reviewer(Base):
-    __tables__ = 'reviewers'
+    __tablename__ = 'reviewers'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False)
