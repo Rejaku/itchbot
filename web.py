@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, render_template, request
-from models import engine, Session, Base, Game, Review
+from models import engine, Session, Base, Game, Review, Reviewer
 
 app = Flask(__name__)
 
@@ -120,7 +120,11 @@ def api_reviews_route(game_id):
 @app.route('/api/users/<user_id>')
 def api_users_route(user_id):
     with Session() as session:
-        reviews = session.query(Review).filter(Review.user_id == int(user_id), Review.review != '')
+        reviews = session.query(Review, Game).filter(
+            Review.game_id == Game.game_id,
+            Review.user_id == int(user_id),
+            Review.review != ''
+        )
         total = reviews.count()
 
         # sorting
@@ -146,7 +150,7 @@ def api_users_route(user_id):
             reviews = reviews.offset(start).limit(length)
 
         result = {
-            'data': [review.to_dict() for review in reviews],
+            'data': [game.to_dict() | review.to_dict() for review, game in reviews],
             'total': total,
         }
 

@@ -120,7 +120,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['event_id', 'game_id', 'updated_at', 'game_name', 'rating', 'review'];
+                    const columnIds = ['event_id', 'game_id', 'updated_at', 'name', 'rating', 'review'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
