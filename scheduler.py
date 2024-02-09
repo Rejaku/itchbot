@@ -130,7 +130,6 @@ class Scheduler:
         self.itch_api_key = itch_api_key
         self.itch_collection_id = itch_collection_id
 
-        models.Review.migrate_to_games_table()
         exit(0)
 
         # makes our logic non-blocking
