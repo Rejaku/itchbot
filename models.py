@@ -129,12 +129,20 @@ class Game(Base):
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RequestException),
                           jitter=None,
                           base=20)
     def refresh_tags_and_rating(self):
         print("[refresh_tags_and_rating] URL: " + self.url)
-        with requests.get(self.url, timeout=5) as response:
+        with requests.get(self.url, timeout=5, allow_redirects=True) as response:
+            if response.status_code == 404:
+                print("[refresh_tags_and_rating] Status 404")
+                return
+            elif response.status_code != 200:
+                print("[refresh_tags_and_rating] Status != 200: " + str(response.status_code))
+                raise RequestException("Status code not 200, retrying")
+
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             if self.status not in ['Abandoned', 'Canceled', 'Released']:
@@ -165,13 +173,21 @@ class Game(Base):
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RequestException),
                           jitter=None,
                           base=20)
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + self.game_id
         print("[refresh_base_info] URL: " + url)
-        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
+            if response.status_code == 404:
+                print("[refresh_base_info] Status 404")
+                return
+            elif response.status_code != 200:
+                print("[refresh_base_info] Status != 200: " + str(response.status_code))
+                raise RequestException("Status code not 200, retrying")
+
             game = json.loads(response.text)
             if 'game' in game:
                 self.created_at = int(datetime.datetime.fromisoformat(
@@ -181,13 +197,21 @@ class Game(Base):
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RequestException),
                           jitter=None,
                           base=20)
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
         print("[refresh_version] URL: " + url)
-        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
+            if response.status_code == 404:
+                print("[refresh_version] Status 404")
+                return
+            elif response.status_code != 200:
+                print("[refresh_version] Status != 200: " + str(response.status_code))
+                raise RequestException("Status code not 200, retrying")
+
             uploads = json.loads(response.text)
             if 'uploads' in uploads:
                 self.platform_windows = 0
@@ -539,7 +563,7 @@ class Review(Base):
                           base=20)
     def get_game_id(url):
         print("[get_game_id] URL: " + url)
-        with requests.get(url, timeout=5) as response:
+        with requests.get(url, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("[get_game_id] Status 404")
                 return None
