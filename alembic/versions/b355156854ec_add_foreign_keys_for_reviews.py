@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column('reviews', 'game_id', existing_type=sa.String(50), type_=sa.Integer, existing_nullable=False, nullable=False)
+    op.alter_column('games', 'game_id', existing_type=sa.String(50), type_=sa.Integer, existing_nullable=False, nullable=False)
     op.create_foreign_key('reviews_game_id_fkey', 'reviews', 'games', ['game_id'], ['game_id'])
     op.create_foreign_key('reviews_user_id_fkey', 'reviews', 'reviewers', ['user_id'], ['user_id'])
 
@@ -25,4 +25,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint('reviews_user_id_fkey', 'reviews', type_='foreignkey')
     op.drop_constraint('reviews_game_id_fkey', 'reviews', type_='foreignkey')
-    op.alter_column('reviews', 'game_id', existing_type=sa.Integer, type_=sa.String(50), existing_nullable=False, nullable=False)
+    op.alter_column('games', 'game_id', existing_type=sa.Integer, type_=sa.String(50), existing_nullable=False, nullable=False)
