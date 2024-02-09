@@ -365,6 +365,29 @@ class User(Base):
         self.discord_id = discord_id
         self.processed_at = processed_at
 
+
+class Reviewer(Base):
+    __tables__ = 'reviewers'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False)
+    user_name = Column(String(100), nullable=False)
+    created_at = Column(Integer, nullable=False)
+    updated_at = Column(Integer, nullable=False)
+
+    def __init__(self, user_id, user_name, created_at=0, updated_at=0):
+        self.user_id = user_id
+        self.user_name = user_name
+        self.created_at = created_at
+        self.updated_at = updated_at
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'user_name': self.user_name
+        }
+
+
 class Review(Base):
     __tablename__ = 'reviews'
 
@@ -373,23 +396,17 @@ class Review(Base):
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer, nullable=False)
     game_id = Column(Integer)
-    game_name = Column(String(200), nullable=False)
-    game_url = Column(String(250), nullable=False)
     user_id = Column(Integer)
-    user_name = Column(String(100), nullable=False)
     rating = Column(Integer, nullable=False)
     review = Column(Text)
     hidden = Column(BOOLEAN, default=0)
 
-    def __init__(self, event_id, created_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review, hidden=0):
+    def __init__(self, event_id, created_at, updated_at, game_id, user_id, rating, review, hidden=0):
         self.event_id = event_id
         self.created_at = created_at
         self.updated_at = updated_at
         self.game_id = game_id
-        self.game_name = game_name
-        self.game_url = game_url
         self.user_id = user_id
-        self.user_name = user_name
         self.rating = rating
         self.review = review
         self.hidden = hidden
@@ -400,7 +417,6 @@ class Review(Base):
             'updated_at': self.updated_at,
             'user_id': self.user_id,
             'game_id': self.game_id,
-            'game_name': self.game_name,
             'rating': self.rating,
             'review': self.review
         }
@@ -470,22 +486,40 @@ class Review(Base):
                     updated_at = int(datetime.datetime.fromisoformat(
                         event_time['title'] + '+00:00'
                     ).timestamp())
+                    game_name = game_info.text
+                    game_url = game_info['href']
                     game_cell = review.find("div", {"class": "game_cell"})
                     if game_cell:
                         game_id = int(game_cell['data-game_id'])
                     else:
-                        game_id = None
+                        game_id = int(Review.get_game_id(game_url))
                     game_info = review.find("a", {"class": "object_title"}, href=True)
-                    game_name = game_info.text
-                    game_url = game_info['href']
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
                     review_text = ''
                     if rating_blurb:
                         review_text = rating_blurb
+                    existing_reviewer = session.query(Reviewer).filter_by(user_id=user_id).first()
+                    if existing_reviewer is None:
+                        new_reviewer = Reviewer(user_id, user_name, updated_at, updated_at)
+                        session.add(new_reviewer)
+                        session.commit()
+                    elif user_name != existing_reviewer.user_name:
+                        existing_reviewer.user_name = user_name
+                        existing_reviewer.updated_at = updated_at
+                        session.commit()
+                    existing_game = session.query(Game).filter_by(game_id=game_id).first()
+                    if existing_game is None:
+                        new_game = Game('itch', game_id, game_name, '', game_url, '', hidden=1)
+                        session.add(new_game)
+                        session.commit()
+                    elif existing_game.name != game_name or existing_game.url != game_url:
+                        existing_game.name = game_name
+                        existing_game.url = game_url
+                        session.commit()
                     existing_review = session.query(Review).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Review(event_id, updated_at, updated_at, game_id, game_name, game_url, user_id, user_name, rating, review_text)
+                        new_review = Review(event_id, updated_at, updated_at, game_id, user_id, rating, review_text)
                         session.add(new_review)
                         session.commit()
                     if start_event_id is None or start_event_id > event_id:
@@ -509,11 +543,8 @@ class Review(Base):
             if response.status_code == 404:
                 print("[get_game_id] Status 404")
                 return None
-            if response.status_code == 429:
-                print("[get_game_id] Rate limit")
-                print(", ".join(f"{header}: {value}" for header, value in response.headers.items()))
             elif response.status_code != 200:
-                print("[get_game_id] Status 200" + str(response.status_code))
+                print("[get_game_id] Status != 200: " + str(response.status_code))
                 raise RequestException("Status code not 200, retrying")
 
             html = response.text
