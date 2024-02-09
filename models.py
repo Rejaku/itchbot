@@ -486,6 +486,7 @@ class Review(Base):
                     updated_at = int(datetime.datetime.fromisoformat(
                         event_time['title'] + '+00:00'
                     ).timestamp())
+                    game_info = review.find("a", {"class": "object_title"}, href=True)
                     game_name = game_info.text
                     game_url = game_info['href']
                     game_cell = review.find("div", {"class": "game_cell"})
@@ -493,7 +494,6 @@ class Review(Base):
                         game_id = int(game_cell['data-game_id'])
                     else:
                         game_id = int(Review.get_game_id(game_url))
-                    game_info = review.find("a", {"class": "object_title"}, href=True)
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
                     review_text = ''
