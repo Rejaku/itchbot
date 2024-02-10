@@ -14,7 +14,7 @@ Base.metadata.create_all(engine)
 
 
 def refresh_tags_and_rating():
-    print('[refresh_tags_and_rating] Start')
+    print("\n[refresh_tags_and_rating] Start\n")
     with Session() as session:
         games = session.query(Game).filter(Game.hidden == 0).all()
         for game in games:
@@ -22,15 +22,15 @@ def refresh_tags_and_rating():
                 game.refresh_tags_and_rating()
                 game.error = None
             except Exception as exception:
-                print('[Update Error]', exception)
+                print("\n[Update Error] ", exception, "\n")
                 game.error = exception
             session.commit()
             time.sleep(30)
-    print('[refresh_tags_and_rating] End')
+    print("\n[refresh_tags_and_rating] End\n")
 
 
 def refresh_version(itch_api_key, status=None):
-    print('[refresh_version] Start')
+    print("\n[refresh_version] Start\n")
     with Session() as session:
         if status:
             games = session.query(Game) \
@@ -45,11 +45,11 @@ def refresh_version(itch_api_key, status=None):
                 game.refresh_version(itch_api_key)
                 game.error = None
             except Exception as exception:
-                print('[Update Error]', exception)
+                print("\n[Update Error] ", exception, "\n")
                 game.error = exception
             session.commit()
             time.sleep(30)
-    print('[refresh_version] End')
+    print("\n[refresh_version] End\n")
 
 
 class Scheduler:
@@ -71,7 +71,7 @@ class Scheduler:
         ) as response:
             collection = json.loads(response.text)
             if len(collection['collection_games']) == 0:
-                print('No more!')
+                print("\nNo more!\n")
                 return False
 
             with Session() as session:
@@ -112,7 +112,7 @@ class Scheduler:
             return True
 
     def update_watchlist(self):
-        print('[update_watchlist] Start')
+        print("\n[update_watchlist] Start\n")
         page = 0
         while True:
             page += 1
@@ -120,7 +120,7 @@ class Scheduler:
             if not has_more:
                 break
             time.sleep(30)
-        print('[update_watchlist] End')
+        print("\n[update_watchlist] End\n")
 
     def run(
         self,
@@ -135,7 +135,7 @@ class Scheduler:
         thread.start()
 
     def scheduler(self):
-        print('[scheduler] Start')
+        print("\n[scheduler] Start\n")
         schedule.every(15).minutes.do(models.Review.import_latest_reviews)
         schedule.every(3).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.at("00:00").do(self.update_watchlist)

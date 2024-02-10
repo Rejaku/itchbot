@@ -135,13 +135,13 @@ class Game(Base):
                           jitter=None,
                           base=60)
     def refresh_tags_and_rating(self):
-        print("[refresh_tags_and_rating] URL: " + self.url)
+        print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
         with requests.get(self.url, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
-                print("[refresh_tags_and_rating] Status 404")
+                print("\n[refresh_tags_and_rating] Status 404\n")
                 return
             elif response.status_code != 200:
-                print("[refresh_tags_and_rating] Status != 200: " + str(response.status_code))
+                print("\n[refresh_tags_and_rating] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
             html = response.text
@@ -180,13 +180,13 @@ class Game(Base):
                           base=60)
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + self.game_id
-        print("[refresh_base_info] URL: " + url)
+        print("\n[refresh_base_info] URL: " + url + "\n")
         with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
-                print("[refresh_base_info] Status 404")
+                print("\n[refresh_base_info] Status 404\n")
                 return
             elif response.status_code != 200:
-                print("[refresh_base_info] Status != 200: " + str(response.status_code))
+                print("\n[refresh_base_info] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
             game = json.loads(response.text)
@@ -204,13 +204,13 @@ class Game(Base):
                           base=60)
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
-        print("[refresh_version] URL: " + url)
+        print("\n[refresh_version] URL: " + url + "\n")
         with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
-                print("[refresh_version] Status 404")
+                print("\n[refresh_version] Status 404\n")
                 return
             elif response.status_code != 200:
-                print("[refresh_version] Status != 200: " + str(response.status_code))
+                print("\n[refresh_version] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
             uploads = json.loads(response.text)
@@ -299,7 +299,7 @@ class Game(Base):
         self.stats_options = 0
         self.stats_words = 0
         url = self.url + '/file/' + str(upload_info['id'])
-        print("[get_script_stats] URL: " + url)
+        print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
         with requests.post(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
             download = json.loads(response.text)
@@ -474,11 +474,12 @@ class Review(Base):
         start_event_id = None
 
         while True:
-            print('[reviews] Loop start: ' + str(start_event_id))
+            print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
             start_event_id = Review.import_reviews(request_session, start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
+                print("\n[reviews] Import finished\n")
                 break
-            print('[reviews] Loop end: ' + str(start_event_id) + "\n\n")
+            print("\n[reviews] Loop end: " + str(start_event_id) + "\n\n")
             time.sleep(30)
 
     @staticmethod
@@ -492,9 +493,9 @@ class Review(Base):
         previous_start_event_id = start_event_id
         if start_event_id is not None:
             url += '&from_event=' + str(start_event_id)
-        print("[import_reviews] URL: " + url)
+        print("\n[import_reviews] URL: " + url + "\n")
         with request_session.get(url, timeout=5) as response, Session() as session:
-            print("[import_reviews] Received response")
+            print("\n[import_reviews] Received response\n")
             events = json.loads(response.text)
             start_event_id = None
             if 'next_page' in events:
@@ -571,13 +572,13 @@ class Review(Base):
                           jitter=None,
                           base=60)
     def get_game_id(url):
-        print("[get_game_id] URL: " + url)
+        print("\n[get_game_id] URL: " + url + "\n")
         with requests.get(url, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
-                print("[get_game_id] Status 404")
+                print("\n[get_game_id] Status 404\n")
                 return None
             elif response.status_code != 200:
-                print("[get_game_id] Status != 200: " + str(response.status_code))
+                print("\n[get_game_id] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
             html = response.text
@@ -585,9 +586,9 @@ class Review(Base):
             itch_path = soup.find("meta", {"name": "itch:path"})
             if itch_path and itch_path['content']:
                 game_id = itch_path['content'].split('/')[-1]
-                print("[get_game_id] Game ID: " + game_id)
+                print("\n[get_game_id] Game ID: " + game_id + "\n")
             else:
-                print("[get_game_id] Could not find game ID, retrying: " + html)
+                print("\n[get_game_id] Could not find game ID, retrying: " + html + "\n")
                 raise RuntimeError("Could not find game ID")
 
             return game_id

@@ -28,11 +28,11 @@ async def on_ready():
 
 @tasks.loop(minutes=30)
 async def notify_about_updates():
-    print('[notify_about_updates] Start')
+    print("\n[notify_about_updates] Start\n")
     await bot.wait_until_ready()
     with Session() as session:
         users = session.query(User)
-        print('[notify_about_updates] User loop')
+        print("\n[notify_about_updates] User loop\n")
         for user in users:
             start_time = time.time()
             games = session.query(Game).filter(Game.hidden == 0, Game.updated_at > user.processed_at).order_by('name').all()
