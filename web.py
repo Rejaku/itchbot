@@ -25,7 +25,7 @@ def reviews_route(game_id):
         if game:
             game_name = game.name
         else:
-            review = session.query(Review).filter(Review.hidden == 0, Review.game_id == game_id).order_by(Review.created_at.desc()).first()
+            review = session.query(Review).filter(Review.game_id == game_id, Review.hidden == 0).order_by(Review.created_at.desc()).first()
             if review:
                 game_name = review.game_name
 
@@ -84,7 +84,7 @@ def api_data_route():
 @app.route('/api/reviews/<game_id>')
 def api_reviews_route(game_id):
     with Session() as session:
-        reviews = session.query(Review).filter(Review.hidden == 0, Review.game_id == int(game_id), Review.review != '')
+        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.review != '')
         total = reviews.count()
 
         # sorting
@@ -124,6 +124,7 @@ def api_users_route(user_id):
             Game, Review.game_id == Game.game_id
         ).filter(
             Review.user_id == int(user_id),
+            Review.hidden == 0,
             Review.review != ''
         )
         total = reviews.count()
