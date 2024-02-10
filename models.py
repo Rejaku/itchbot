@@ -477,7 +477,7 @@ class Review(Base):
             print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
             start_event_id = Review.import_reviews(request_session, start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
-                print("\n[reviews] Import finished\n")
+                print("\n[reviews] Import finished: ", start_event_id, " ", end_event_id, "\n")
                 break
             print("\n[reviews] Loop end: " + str(start_event_id) + "\n\n")
             time.sleep(30)
