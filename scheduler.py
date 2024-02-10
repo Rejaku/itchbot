@@ -25,7 +25,7 @@ def refresh_tags_and_rating():
                 print('[Update Error]', exception)
                 game.error = exception
             session.commit()
-            time.sleep(20)
+            time.sleep(30)
     print('[refresh_tags_and_rating] End')
 
 
@@ -48,7 +48,7 @@ def refresh_version(itch_api_key, status=None):
                 print('[Update Error]', exception)
                 game.error = exception
             session.commit()
-            time.sleep(20)
+            time.sleep(30)
     print('[refresh_version] End')
 
 
@@ -62,7 +62,7 @@ class Scheduler:
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError),
                           jitter=None,
-                          base=20)
+                          base=60)
     def update_watchlist_page(self, page: int):
         with requests.get(
                 'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
@@ -119,7 +119,7 @@ class Scheduler:
             has_more = self.update_watchlist_page(page)
             if not has_more:
                 break
-            time.sleep(20)
+            time.sleep(30)
         print('[update_watchlist] End')
 
     def run(
