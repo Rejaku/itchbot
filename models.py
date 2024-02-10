@@ -548,6 +548,10 @@ class Review(Base):
                     existing_review = session.query(Review).filter_by(event_id=event_id).first()
                     if existing_review is None:
                         new_review = Review(event_id, updated_at, updated_at, game_id, user_id, rating, review_text)
+                        session.query(Review). \
+                            filter(Review.game_id == new_review.game_id, Review.user_id == new_review.user_id). \
+                            update({'hidden': True})
+                        session.commit()
                         session.add(new_review)
                         session.commit()
                     if start_event_id is None or start_event_id > event_id:
@@ -578,7 +582,7 @@ class Review(Base):
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             itch_path = soup.find("meta", {"name": "itch:path"})
-            if itch_path:
+            if itch_path and itch_path['content']:
                 game_id = itch_path['content'].split('/')[-1]
                 print("[get_game_id] Game ID: " + game_id)
             else:
