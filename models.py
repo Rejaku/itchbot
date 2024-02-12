@@ -179,7 +179,7 @@ class Game(Base):
                           jitter=None,
                           base=60)
     def refresh_base_info(self, itch_api_key):
-        url = 'https://api.itch.io/games/' + self.game_id
+        url = 'https://api.itch.io/games/' + str(self.game_id)
         print("\n[refresh_base_info] URL: " + url + "\n")
         with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
@@ -203,7 +203,7 @@ class Game(Base):
                           jitter=None,
                           base=60)
     def refresh_version(self, itch_api_key, force: bool = False):
-        url = 'https://api.itch.io/games/' + self.game_id + '/uploads'
+        url = 'https://api.itch.io/games/' + str(self.game_id) + '/uploads'
         print("\n[refresh_version] URL: " + url + "\n")
         with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
             if response.status_code == 404:
@@ -477,7 +477,7 @@ class Review(Base):
             print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
             start_event_id = Review.import_reviews(request_session, start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
-                print("\n[reviews] Import finished: ", start_event_id, " ", end_event_id, "\n")
+                print("\n[reviews] Import finished: ", str(start_event_id), " ", str(end_event_id), "\n")
                 break
             print("\n[reviews] Loop end: " + str(start_event_id) + "\n\n")
             time.sleep(30)
