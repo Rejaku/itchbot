@@ -137,7 +137,7 @@ class Scheduler:
     def scheduler(self):
         print("\n[scheduler] Start\n")
         schedule.every(15).minutes.do(models.Review.import_latest_reviews)
-        schedule.every(3).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
+        schedule.every(6).hours.at("00:00").do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating)
         schedule.every().monday.at("06:00").do(refresh_version, self.itch_api_key, ['Released', 'Prototype'])
