@@ -1,0 +1,145 @@
+<html lang="en">
+<head>
+    <title>Reviews by "{{ user_id }}"</title>
+    <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            background-color: #606060;
+            color: #fff;
+            font-family: Sans-Serif, serif;
+            overflow: scroll;
+        }
+        table {
+            width: 100%;
+        }
+        [data-column-id="updated_at"] {
+            width: 205px;
+        }
+        [data-column-id="game_name"] {
+            width: 450px;
+        }
+        [data-column-id="rating"] {
+            width: 120px;
+        }
+        [data-column-id="itch"] {
+            width: 150px;
+        }
+        th.gridjs-th-sort .gridjs-th-content {
+            width: min-content;
+            white-space: initial;
+        }
+        #table {
+            display: inline-table;
+        }
+        th.gridjs-th {
+            background-color: #222222;
+            color: #fff;
+            border: 1px solid #867575;
+        }
+        th.gridjs-th-sort:focus, th.gridjs-th-sort:hover {
+            background-color: #707070;
+        }
+        button.gridjs-sort-neutral,
+        button.gridjs-sort-desc,
+        button.gridjs-sort-asc {
+            opacity: 0.7;
+            filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(239deg) brightness(106%) contrast(101%);
+        }
+        .gridjs-tbody, td.gridjs-td {
+            background-color: #4b4848;
+        }
+        td.gridjs-td {
+            border: 1px solid #867575;
+        }
+        a {
+            color: #fff;
+        }
+        .gridjs-footer {
+            background-color: #222222;
+        }
+        .gridjs-pagination {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Reviews by "{{ user_id }}"</h1>
+    <hr>
+    <p>
+        Ratings without a review are not shown below.
+    </p>
+    <div id="table"></div>
+</div>
+<script src="https://unpkg.com/gridjs@5/dist/gridjs.umd.js"></script>
+<script>
+    const updateUrl = (prev, query) => {
+        return prev + (prev.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(query).toString();
+    };
+
+    new gridjs.Grid({
+        columns: [
+            {id: 'event_id', name: 'Event ID', sort: false, hidden: true},
+            {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
+            {
+                id: 'updated_at', name: 'Date', formatter: (cell) => {
+                    return cell ? (new Date(cell * 1000)).toLocaleString() : '';
+                }
+            },
+            {
+                id: 'name', name: 'Game Name', formatter: (cell, row) => {
+                    return gridjs.html('<a href="/reviews/' + row.cells[1].data + '">' + cell + '</a>');
+                }
+            },
+            {
+                id: 'rating', name: 'Rating', formatter: (cell) => {
+                    return cell;
+                }
+            },
+            {
+                id: 'review', name: 'Review', formatter: (cell) => {
+                    return cell ? gridjs.html(cell) : '';
+                }
+            },
+            {
+                id: 'user_id', name: 'User Reviews', formatter: (cell) => {
+                    return gridjs.html('<a href="/users/' + cell + '">All reviews by user</a>');
+                }
+            },
+            {
+                id: 'itch', name: 'Source', formatter: (cell, row) => {
+                    return gridjs.html('<a target="_blank" href="https://itch.io/event/' + row.cells[0].data + '">Read on itch</a>');
+                }, sort: false
+            }
+        ],
+        server: {
+            url: '/api/users/all',
+            then: results => results.data,
+            total: results => results.total,
+        },
+        search: {
+            enabled: false,
+        },
+        sort: {
+            enabled: true,
+            multiColumn: true,
+            server: {
+                url: (prev, columns) => {
+                    const columnIds = ['event_id', 'game_id', 'updated_at', 'name', 'rating', 'review', 'user_id'];
+                    const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
+                    return updateUrl(prev, {sort});
+                },
+            },
+        },
+        pagination: {
+            enabled: true,
+            server: {
+                url: (prev, page, limit) => {
+                    return updateUrl(prev, {start: page * limit, length: limit});
+                },
+            },
+        },
+    }).render(document.getElementById('table'));
+</script>
+</body>
+</html>

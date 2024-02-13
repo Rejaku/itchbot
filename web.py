@@ -16,6 +16,9 @@ HYPERLINK = '<a href="{}">{}</a>'
 def games_route():
     return render_template('server_table.html')
 
+@app.route('/reviews/all')
+def reviews_all_route():
+    return render_template('review_all_table.html')
 
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
@@ -81,7 +84,7 @@ def api_data_route():
     return result
 
 
-@app.route('/api/reviews/<game_id>')
+@app.route('/api/reviews/<int:game_id>')
 def api_reviews_route(game_id):
     with Session() as session:
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.review != '')
@@ -120,13 +123,21 @@ def api_reviews_route(game_id):
 @app.route('/api/users/<user_id>')
 def api_users_route(user_id):
     with Session() as session:
-        reviews = session.query(Review, Game).join(
-            Game, Review.game_id == Game.game_id
-        ).filter(
-            Review.user_id == int(user_id),
-            Review.hidden == 0,
-            Review.review != ''
-        )
+        if user_id == 'all':
+            reviews = session.query(Review, Game).join(
+                Game, Review.game_id == Game.game_id
+            ).filter(
+                Review.hidden == 0,
+                Review.review != ''
+            )
+        else:
+            reviews = session.query(Review, Game).join(
+                Game, Review.game_id == Game.game_id
+            ).filter(
+                Review.user_id == int(user_id),
+                Review.hidden == 0,
+                Review.review != ''
+            )
         total = reviews.count()
 
         # sorting
@@ -136,7 +147,7 @@ def api_users_route(user_id):
             for s in sort.split(','):
                 direction = s[0]
                 name = s[1:]
-                if name not in ['updated_at', 'name', 'rating', 'review']:
+                if name not in ['updated_at', 'name', 'rating', 'review', 'user_id']:
                     name = 'updated_at'
                 col = getattr(Review, name)
                 if direction == '-':
