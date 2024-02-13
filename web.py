@@ -1,6 +1,8 @@
 import os
 
 from flask import Flask, render_template, request
+from sqlalchemy import func
+
 from models import engine, Session, Base, Game, Review, Reviewer
 
 app = Flask(__name__)
@@ -124,6 +126,9 @@ def api_reviews_route(game_id):
 def api_users_route(user_id):
     with Session() as session:
         if user_id == 'all':
+            total = session.query(func.count(Review.id)).filter(
+                Review.hidden == 0,
+                Review.review != '').scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
@@ -131,6 +136,10 @@ def api_users_route(user_id):
                 Review.review != ''
             )
         else:
+            total = session.query(func.count(Review.id)).filter(
+                Review.user_id == int(user_id),
+                Review.hidden == 0,
+                Review.review != '').scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
@@ -138,7 +147,6 @@ def api_users_route(user_id):
                 Review.hidden == 0,
                 Review.review != ''
             )
-        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
