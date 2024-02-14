@@ -103,7 +103,7 @@ def api_reviews_route(game_id):
             for s in sort.split(','):
                 direction = s[0]
                 name = s[1:]
-                if name not in ['updated_at', 'user_id', 'rating', 'review']:
+                if name not in ['updated_at', 'user_id', 'rating']:
                     name = 'updated_at'
                 col = getattr(Review, name)
                 if direction == '-':
@@ -177,7 +177,7 @@ def api_users_route(user_id):
                 if name in ['name']:
                     col = getattr(Game, name)
                 else:
-                    if name not in ['updated_at', 'rating', 'review', 'user_id']:
+                    if name not in ['updated_at', 'rating', 'user_id']:
                         name = 'updated_at'
                     col = getattr(Review, name)
 
