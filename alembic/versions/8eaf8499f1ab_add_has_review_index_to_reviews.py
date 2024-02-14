@@ -17,9 +17,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_index('idx_reviews_hidden_has_review', 'games', ['hidden', 'has_review'])
-    op.create_index('idx_reviews_user_id_hidden_has_review', 'games', ['user_id', 'hidden', 'has_review'])
-    op.create_index('idx_reviews_game_id_hidden_has_review', 'games', ['game_id', 'hidden', 'has_review'])
+    op.create_index('idx_reviews_hidden_has_review', 'reviews', ['hidden', 'has_review'])
+    op.create_index('idx_reviews_user_id_hidden_has_review', 'reviews', ['user_id', 'hidden', 'has_review'])
+    op.create_index('idx_reviews_game_id_hidden_has_review', 'reviews', ['game_id', 'hidden', 'has_review'])
     op.drop_index('idx_reviews_user_id')
     op.drop_index('idx_reviews_game_id')
 
