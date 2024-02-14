@@ -23,7 +23,7 @@ def reviews_all_route():
     return render_template('review_all_table.html')
 
 @app.route('/reviews/allall')
-def reviews_all_route():
+def reviews_allall_route():
     return render_template('review_allall_table.html')
 
 @app.route('/reviews/<int:game_id>')
