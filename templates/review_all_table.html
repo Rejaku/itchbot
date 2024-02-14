@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>Reviews by "{{ user_id }}"</title>
+    <title>All FVN Reviews</title>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -15,11 +15,14 @@
         [data-column-id="updated_at"] {
             width: 205px;
         }
-        [data-column-id="game_name"] {
+        [data-column-id="name"] {
             width: 450px;
         }
         [data-column-id="rating"] {
             width: 120px;
+        }
+        [data-column-id="user_id"] {
+            width: 190px;
         }
         [data-column-id="itch"] {
             width: 150px;
@@ -64,7 +67,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews by "{{ user_id }}"</h1>
+    <h1>All FVN Reviews</h1>
     <hr>
     <p>
         Ratings without a review are not shown below.
