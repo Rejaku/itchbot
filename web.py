@@ -22,6 +22,10 @@ def games_route():
 def reviews_all_route():
     return render_template('review_all_table.html')
 
+@app.route('/reviews/allall')
+def reviews_all_route():
+    return render_template('review_allall_table.html')
+
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
     with Session() as session:
