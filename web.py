@@ -50,14 +50,17 @@ def users_route(user_id):
 def api_data_route():
     with Session() as session:
         games = session.query(Game)
+        totals = session.query(func.count(Game.id))
 
         # search filter
         search = request.args.get('search')
         if search:
             games = games.filter(Game.hidden == 0, Game.name.like(f'%{search}%'))
+            totals = totals.filter(Game.hidden == 0, Game.name.like(f'%{search}%'))
         else:
             games = games.filter(Game.hidden == 0)
-        total = games.count()
+            totals = totals.filter(Game.hidden == 0)
+        total = totals.scalar()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -92,9 +95,9 @@ def api_data_route():
 
 @app.route('/api/reviews/<int:game_id>')
 def api_reviews_route(game_id):
-    with Session() as session:
+    with (Session() as session):
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1)
-        total = reviews.count()
+        total = session.query(func.count(Review.id)).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1).scalar()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
