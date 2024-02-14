@@ -428,6 +428,7 @@ class Review(Base):
     hidden = Column(BOOLEAN, default=0)
     game = relationship("Game", back_populates="reviews")
     reviewer = relationship("Reviewer", back_populates="reviews")
+    has_review = Column(BOOLEAN, nullable=False, default=0)
 
     def __init__(self, event_id, created_at, updated_at, game_id, user_id, rating, review, hidden=0):
         self.event_id = event_id
@@ -438,6 +439,7 @@ class Review(Base):
         self.rating = rating
         self.review = review
         self.hidden = hidden
+        self.has_review = (review != '')
 
     def to_dict(self):
         return {

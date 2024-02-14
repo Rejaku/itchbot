@@ -89,7 +89,7 @@ def api_data_route():
 @app.route('/api/reviews/<int:game_id>')
 def api_reviews_route(game_id):
     with Session() as session:
-        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.review != '')
+        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1)
         total = reviews.count()
 
         # sorting
@@ -128,24 +128,24 @@ def api_users_route(user_id):
         if user_id == 'all':
             total = session.query(func.count(Review.id)).filter(
                 Review.hidden == 0,
-                Review.review != '').scalar()
+                Review.has_review == 1).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
                 Review.hidden == 0,
-                Review.review != ''
+                Review.has_review == 1
             )
         else:
             total = session.query(func.count(Review.id)).filter(
                 Review.user_id == int(user_id),
                 Review.hidden == 0,
-                Review.review != '').scalar()
+                Review.has_review == 1).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
                 Review.user_id == int(user_id),
                 Review.hidden == 0,
-                Review.review != ''
+                Review.has_review == 1
             )
 
         # sorting
