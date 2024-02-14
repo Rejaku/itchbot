@@ -126,6 +126,21 @@ def api_reviews_route(game_id):
 def api_users_route(user_id):
     with Session() as session:
         if user_id == 'all':
+            total = session.query(func.count(Review.id)).join(
+                Game, Review.game_id == Game.game_id
+            ).filter(
+                Review.hidden == 0,
+                Review.has_review == 1,
+                Game.hidden == 0
+            ).scalar()
+            reviews = session.query(Review, Game).join(
+                Game, Review.game_id == Game.game_id
+            ).filter(
+                Review.hidden == 0,
+                Review.has_review == 1,
+                Game.hidden == 0
+            )
+        elif user_id == 'allall':
             total = session.query(func.count(Review.id)).filter(
                 Review.hidden == 0,
                 Review.has_review == 1).scalar()
