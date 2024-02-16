@@ -379,6 +379,61 @@ class Game(Base):
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
 
+class GameVersion(Base):
+    __tablename__ = 'game_versions'
+
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(50), nullable=False)
+    version = Column(String(20))
+    devlog = Column(String(250))
+    platform_windows = Column(Integer, nullable=False, default=0)
+    platform_linux = Column(Integer, nullable=False, default=0)
+    platform_mac = Column(Integer, nullable=False, default=0)
+    platform_android = Column(Integer, nullable=False, default=0)
+    platform_web = Column(Integer, nullable=False, default=0)
+    stats_blocks = Column(Integer, nullable=False, default=0)
+    stats_menus = Column(Integer, nullable=False, default=0)
+    stats_options = Column(Integer, nullable=False, default=0)
+    stats_words = Column(Integer, nullable=False, default=0)
+    created_at = Column(Integer, nullable=False)
+    released_at = Column(Integer, nullable=False)
+
+    def __init__(self, game_id, version, devlog, platform_windows, platform_linux, platform_mac, platform_android,
+                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, released_at):
+        self.game_id = game_id
+        self.version = version
+        self.devlog = devlog
+        self.platform_windows = platform_windows
+        self.platform_linux = platform_linux
+        self.platform_mac = platform_mac
+        self.platform_android = platform_android
+        self.platform_web = platform_web
+        self.stats_blocks = stats_blocks
+        self.stats_menus = stats_menus
+        self.stats_options = stats_options
+        self.stats_words = stats_words
+        self.created_at = created_at
+        self.released_at = released_at
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'game_id': self.game_id,
+            'version': self.version,
+            'devlog': self.devlog,
+            'platform_windows': self.platform_windows,
+            'platform_linux': self.platform_linux,
+            'platform_mac': self.platform_mac,
+            'platform_android': self.platform_android,
+            'platform_web': self.platform_web,
+            'stats_blocks': self.stats_blocks,
+            'stats_menus': self.stats_menus,
+            'stats_options': self.stats_options,
+            'stats_words': self.stats_words,
+            'created_at': self.created_at,
+            'released_at': self.released_at
+        }
+
 class User(Base):
     __tablename__ = 'users'
 
