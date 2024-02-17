@@ -523,7 +523,13 @@ class Review(Base):
         }
 
     @staticmethod
-    def import_latest_reviews():
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError,
+                           TypeError),
+                          jitter=None,
+                          base=60)
+    def get_request_sesstion():
         ITCH_USER = os.environ['ITCH_USER']
         ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
 
@@ -536,7 +542,10 @@ class Review(Base):
             url,
             {"username": ITCH_USER, "password": ITCH_PASSWORD, "csrf_token": csrf_token}
         )
+        return request_session
 
+    @staticmethod
+    def import_latest_reviews():
         # Get the newest timestamp
         end_event_id = None
         with Session() as session:
@@ -548,7 +557,7 @@ class Review(Base):
 
         while True:
             print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
-            start_event_id = Review.import_reviews(request_session, start_event_id)
+            start_event_id = Review.import_reviews(Review.get_request_sesstion(), start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
                 print("\n[reviews] Import finished: ", str(start_event_id), " ", str(end_event_id), "\n")
                 break
