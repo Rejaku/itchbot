@@ -128,12 +128,7 @@
             total: results => results.total,
         },
         search: {
-            enabled: true,
-            server: {
-                url: (prev, search) => {
-                    return updateUrl(prev, {search});
-                },
-            },
+            enabled: false,
         },
         sort: {
             enabled: true,
