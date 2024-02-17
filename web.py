@@ -128,6 +128,9 @@ def api_users_route(reviewer_id):
         if reviewer_id == 'all':
             total = session.query(func.count(Review.id)).join(
                 Game, Review.game_id == Game.id
+            ).with_hint(
+                Review,
+                'USE INDEX(PRIMARY)'
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
@@ -135,6 +138,9 @@ def api_users_route(reviewer_id):
             ).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
+            ).with_hint(
+                Review,
+                'USE INDEX(PRIMARY)'
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
