@@ -89,8 +89,8 @@ def api_data_route():
 @app.route('/api/reviews/<int:game_id>')
 def api_reviews_route(game_id):
     with (Session() as session):
-        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1)
-        total = session.query(func.count(Review.id)).filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1).scalar()
+        reviews = session.query(Review).with_hint(Review, 'USE INDEX idx_reviews_game_id_hidden_has_review').filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1)
+        total = session.query(func.count(Review.id)).with_hint(Review, 'USE INDEX idx_reviews_game_id_hidden_has_review').filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1).scalar()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
