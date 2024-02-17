@@ -30,15 +30,8 @@ def reviews_allall_route():
 def reviews_route(game_id):
     with Session() as session:
         game = session.query(Game).filter(Game.game_id == game_id).first()
-        game_name = None
-        if game:
-            game_name = game.name
-        else:
-            review = session.query(Review).filter(Review.game_id == game_id, Review.hidden == 0).order_by(Review.created_at.desc()).first()
-            if review:
-                game_name = review.game_name
 
-    return render_template('review_table.html', game_id=game_id, game_name=game_name)
+    return render_template('review_table.html', game_id=game.id, game_name=game.name)
 
 
 @app.route('/users/<int:user_id>')
