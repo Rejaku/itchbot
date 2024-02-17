@@ -130,7 +130,7 @@ def api_users_route(reviewer_id):
                 Game, Review.game_id == Game.id
             ).with_hint(
                 Review,
-                'USE INDEX(PRIMARY)'
+                'USE INDEX(idx_reviews_hidden_has_review)'
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
@@ -140,7 +140,7 @@ def api_users_route(reviewer_id):
                 Game, Review.game_id == Game.id
             ).with_hint(
                 Review,
-                'USE INDEX(PRIMARY)'
+                'USE INDEX(idx_reviews_hidden_has_review)'
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
