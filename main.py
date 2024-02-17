@@ -4,7 +4,7 @@ import os
 import time
 
 from discord.ext import commands, tasks
-from models import engine, Session, Base, Game, User
+from models import engine, Session, Base, Game, User, GameVersion
 from scheduler import Scheduler
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
@@ -35,13 +35,22 @@ async def notify_about_updates():
         print("\n[notify_about_updates] User loop\n")
         for user in users:
             start_time = time.time()
-            games = session.query(Game).filter(Game.hidden == 0, Game.updated_at > user.processed_at).order_by('name').all()
-            if games:
+            game_versions = session.query(
+                Game, GameVersion
+            ).join(
+                Game, GameVersion.game_id == Game.id
+            ).filter(
+                Game.hidden == 0,
+                GameVersion.created_at > user.processed_at
+            ).order_by(
+                Game.name
+            ).all()
+            if game_versions:
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
-                result = f'Found {len(games)} new updates:\n'
-                for game in games:
-                    result += f'{game.name}, Latest Version: {game.latest_version}, ' \
-                              f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
+                result = f'Found {len(game_versions)} new updates:\n'
+                for game, game_version in game_versions:
+                    result += f'{game_version.name}, Latest Version: {game_version.version}, ' \
+                              f'Last Updated At: <t:{game_version.released_at}:f> <{game.url}> <{game_version.devlog}>\n'
                     if len(result) > 1600:
                         await discord_user.send(result)
                         result = ''

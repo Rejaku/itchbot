@@ -154,7 +154,14 @@ class Game(Base):
             if devlog:
                 devlog_links = devlog.find_all('a', href=True)
                 if devlog_links:
-                    self.devlog = devlog_links[0]['href']
+                    devlog_link = devlog_links[0]['href']
+                    with Session as session:
+                        game_version = session.query(GameVersion).filter(GameVersion.game_id == self.id) \
+                            .order_by(GameVersion.created_at.desc()).first()
+                        if game_version and game_version.devlog == '':
+                            game_version.devlog = devlog_link
+                            session.commit()
+                    self.devlog = devlog_link
             rating = soup.find("div", itemprop="ratingValue")
             rating_count = soup.find("span", itemprop="ratingCount")
             if rating and rating_count:
@@ -282,6 +289,15 @@ class Game(Base):
                     if upload['type'] == 'html':
                         self.platform_web = 1
                 if save_latest_timestamp and latest_timestamp > 0:
+                    with Session() as session:
+                        # Add the new version to the database
+                        game_version = GameVersion(self.id, self.latest_version, '', self.platform_windows,
+                                                   self.platform_linux, self.platform_mac, self.platform_android,
+                                                   self.platform_web, self.stats_blocks, self.stats_menus,
+                                                   self.stats_options, self.stats_words, int(time.time()),
+                                                   self.updated_at)
+                        session.add(game_version)
+                        session.commit()
                     self.updated_at = latest_timestamp
 
     @backoff.on_exception(backoff.expo,
