@@ -40,7 +40,7 @@ def users_route(reviewer_id):
 
 
 @app.route('/versions/<int:game_id>')
-def reviews_route(game_id):
+def versions_route(game_id):
     with Session() as session:
         game = session.query(Game).filter(Game.id == game_id).first()
 
