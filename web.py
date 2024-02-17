@@ -211,7 +211,7 @@ def api_users_route(reviewer_id):
 def api_versions_route(game_id):
     with Session() as session:
         game_versions = session.query(GameVersion).filter(GameVersion.game_id == int(game_id))
-        total = session.query(func.count(GameVersion.id)).filter(GameVersion.game_id == int(game_id))
+        total = session.query(func.count(GameVersion.id)).filter(GameVersion.game_id == int(game_id)).scalar()
 
         # sorting
         sort = request.args.get('sort') or '-released_at'
