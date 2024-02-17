@@ -29,7 +29,7 @@ def reviews_allall_route():
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
     with Session() as session:
-        game = session.query(Game).filter(Game.game_id == game_id).first()
+        game = session.query(Game).filter(Game.id == game_id).first()
 
     return render_template('review_table.html', game_id=game.id, game_name=game.name)
 
@@ -127,14 +127,14 @@ def api_users_route(reviewer_id):
     with Session() as session:
         if reviewer_id == 'all':
             total = session.query(func.count(Review.id)).join(
-                Game, Review.game_id == Game.game_id
+                Game, Review.game_id == Game.id
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
                 Game.hidden == 0
             ).scalar()
             reviews = session.query(Review, Game).join(
-                Game, Review.game_id == Game.game_id
+                Game, Review.game_id == Game.id
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1,
@@ -145,7 +145,7 @@ def api_users_route(reviewer_id):
                 Review.hidden == 0,
                 Review.has_review == 1).scalar()
             reviews = session.query(Review, Game).join(
-                Game, Review.game_id == Game.game_id
+                Game, Review.game_id == Game.id
             ).filter(
                 Review.hidden == 0,
                 Review.has_review == 1
@@ -156,7 +156,7 @@ def api_users_route(reviewer_id):
                 Review.hidden == 0,
                 Review.has_review == 1).scalar()
             reviews = session.query(Review, Game).join(
-                Game, Review.game_id == Game.game_id
+                Game, Review.game_id == Game.id
             ).filter(
                 Review.reviewer_id == int(reviewer_id),
                 Review.hidden == 0,

@@ -81,7 +81,7 @@
             {id: 'platform_web', name: 'Web', sort: false, hidden: true},
             {id: 'stats_blocks', name: 'Blocks', sort: false, hidden: true},
             {id: 'stats_options', name: 'Options', sort: false, hidden: true},
-            {id: 'game_id', name: 'Game ID', sort: false, hidden: true},
+            {id: 'id', name: 'Game ID', sort: false, hidden: true},
             {
                 id: 'name', name: 'Name', formatter: (cell, row) => {
                     return gridjs.html('<a href="' + row.cells[0].data + '">' + cell + '</a>');
@@ -172,7 +172,7 @@
             server: {
                 url: (prev, columns) => {
                     const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
-                        'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options', 'game_id',
+                        'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options', 'id',
                         'name', 'thumb_url', 'description', 'latest_version', 'rating', 'created_at', 'updated_at',
                         'stats_menus', 'stats_words', 'languages', 'platforms', 'game_engine', 'status', 'nsfw'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
