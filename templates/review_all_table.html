@@ -21,7 +21,7 @@
         [data-column-id="rating"] {
             width: 120px;
         }
-        [data-column-id="user_id"] {
+        [data-column-id="reviewer_id"] {
             width: 190px;
         }
         [data-column-id="itch"] {
@@ -111,7 +111,7 @@
                 }, sort: false
             },
             {
-                id: 'user_id', name: 'User Reviews', formatter: (cell) => {
+                id: 'reviewer_id', name: 'User Reviews', formatter: (cell) => {
                     return gridjs.html('<a href="/users/' + cell + '">All reviews by user</a>');
                 }
             },
@@ -134,7 +134,7 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['event_id', 'game_id', 'updated_at', 'name', 'rating', 'review', 'user_id'];
+                    const columnIds = ['event_id', 'game_id', 'updated_at', 'name', 'rating', 'review', 'reviewer_id'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },

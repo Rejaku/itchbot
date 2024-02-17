@@ -34,9 +34,9 @@ def reviews_route(game_id):
     return render_template('review_table.html', game_id=game.id, game_name=game.name)
 
 
-@app.route('/users/<int:user_id>')
-def users_route(user_id):
-    return render_template('user_table.html', user_id=user_id)
+@app.route('/users/<int:reviewer_id>')
+def users_route(reviewer_id):
+    return render_template('user_table.html', reviewer_id=reviewer_id)
 
 
 @app.route('/api/data')
@@ -99,7 +99,7 @@ def api_reviews_route(game_id):
             for s in sort.split(','):
                 direction = s[0]
                 name = s[1:]
-                if name not in ['updated_at', 'user_id', 'rating']:
+                if name not in ['updated_at', 'reviewer_id', 'rating']:
                     name = 'updated_at'
                 col = getattr(Review, name)
                 if direction == '-':
@@ -122,10 +122,10 @@ def api_reviews_route(game_id):
     # response
     return result
 
-@app.route('/api/users/<user_id>')
-def api_users_route(user_id):
+@app.route('/api/users/<reviewer_id>')
+def api_users_route(reviewer_id):
     with Session() as session:
-        if user_id == 'all':
+        if reviewer_id == 'all':
             total = session.query(func.count(Review.id)).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
@@ -140,7 +140,7 @@ def api_users_route(user_id):
                 Review.has_review == 1,
                 Game.hidden == 0
             )
-        elif user_id == 'allall':
+        elif reviewer_id == 'allall':
             total = session.query(func.count(Review.id)).filter(
                 Review.hidden == 0,
                 Review.has_review == 1).scalar()
@@ -152,13 +152,13 @@ def api_users_route(user_id):
             )
         else:
             total = session.query(func.count(Review.id)).filter(
-                Review.user_id == int(user_id),
+                Review.reviewer_id == int(reviewer_id),
                 Review.hidden == 0,
                 Review.has_review == 1).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.game_id
             ).filter(
-                Review.user_id == int(user_id),
+                Review.reviewer_id == int(reviewer_id),
                 Review.hidden == 0,
                 Review.has_review == 1
             )
@@ -173,7 +173,7 @@ def api_users_route(user_id):
                 if name in ['name']:
                     col = getattr(Game, name)
                 else:
-                    if name not in ['updated_at', 'rating', 'user_id']:
+                    if name not in ['updated_at', 'rating', 'reviewer_id']:
                         name = 'updated_at'
                     col = getattr(Review, name)
 

@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>Reviews by "{{ user_id }}"</title>
+    <title>Reviews by "{{ reviewer_id }}"</title>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -64,7 +64,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews by "{{ user_id }}"</h1>
+    <h1>Reviews by "{{ reviewer_id }}"</h1>
     <hr>
         <ul>
         <li>Planned Features: <a target="_blank" href="https://trello.com/b/p5dRvW4F/fvnli">Trello</a></li>
@@ -114,7 +114,7 @@
             }
         ],
         server: {
-            url: '/api/users/{{ user_id }}',
+            url: '/api/users/{{ reviewer_id }}',
             then: results => results.data,
             total: results => results.total,
         },
