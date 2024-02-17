@@ -476,8 +476,8 @@ class Review(Base):
     event_id = Column(Integer, nullable=False)
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer, nullable=False)
-    game_id = Column(Integer, ForeignKey('games.game_id'))
-    user_id = Column(Integer, ForeignKey('reviewers.user_id'))
+    game_id = Column(Integer, ForeignKey('games.id'))
+    reviewer_id = Column(Integer, ForeignKey('reviewers.id'))
     rating = Column(Integer, nullable=False)
     review = Column(Text)
     hidden = Column(BOOLEAN, default=0)
@@ -485,12 +485,12 @@ class Review(Base):
     reviewer = relationship("Reviewer", back_populates="reviews")
     has_review = Column(BOOLEAN, nullable=False, default=0)
 
-    def __init__(self, event_id, created_at, updated_at, game_id, user_id, rating, review, hidden=0):
+    def __init__(self, event_id, created_at, updated_at, game_id, reviewer_id, rating, review, hidden=0):
         self.event_id = event_id
         self.created_at = created_at
         self.updated_at = updated_at
         self.game_id = game_id
-        self.user_id = user_id
+        self.reviewer_id = reviewer_id
         self.rating = rating
         self.review = review
         self.hidden = hidden
@@ -500,7 +500,7 @@ class Review(Base):
         return {
             'event_id': self.event_id,
             'updated_at': self.updated_at,
-            'user_id': self.user_id,
+            'reviewer_id': self.reviewer_id,
             'game_id': self.game_id,
             'rating': self.rating,
             'review': self.review
@@ -562,10 +562,7 @@ class Review(Base):
                 reviews = soup.find_all("div", {"class": "event_row"})
                 for review in reviews:
                     script = review.find("script", {"type": "text/javascript"})
-                    if script:
-                        user_id = re.findall(r"user_id.*:(\d+)", script.text).pop(0)
-                    else:
-                        user_id = None
+                    itch_user_id = re.findall(r"user_id.*:(\d+)", script.text).pop(0)
                     user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
                     event_time = review.find("a", {"class": "event_time"}, href=True)
                     event_id = int(event_time['href'].split('/')[-1])
@@ -577,38 +574,46 @@ class Review(Base):
                     game_url = game_info['href']
                     game_cell = review.find("div", {"class": "game_cell"})
                     if game_cell:
-                        game_id = int(game_cell['data-game_id'])
+                        itch_game_id = int(game_cell['data-game_id'])
                     else:
                         time.sleep(30)
-                        game_id = int(Review.get_game_id(game_url))
+                        itch_game_id = int(Review.get_game_id(game_url))
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
                     review_text = ''
                     if rating_blurb:
                         review_text = rating_blurb
-                    existing_reviewer = session.query(Reviewer).filter_by(user_id=user_id).first()
+                    existing_reviewer = session.query(Reviewer).filter_by(user_id=itch_user_id).first()
                     if existing_reviewer is None:
-                        new_reviewer = Reviewer(user_id, user_name, updated_at, updated_at)
+                        new_reviewer = Reviewer(itch_user_id, user_name, updated_at, updated_at)
                         session.add(new_reviewer)
                         session.commit()
+                        session.flush()
+                        reviewer_id = new_reviewer.id
                     elif user_name != existing_reviewer.user_name:
                         existing_reviewer.user_name = user_name
                         existing_reviewer.updated_at = updated_at
                         session.commit()
-                    existing_game = session.query(Game).filter_by(game_id=game_id).first()
+                    if existing_reviewer is not None:
+                        reviewer_id = existing_reviewer.id
+                    existing_game = session.query(Game).filter_by(game_id=itch_game_id).first()
                     if existing_game is None:
-                        new_game = Game('itch', game_id, game_name, '', game_url, '', hidden=1)
+                        new_game = Game('itch', itch_game_id, game_name, '', game_url, '', hidden=1)
                         session.add(new_game)
                         session.commit()
+                        session.flush()
+                        game_id = new_game.id
                     elif existing_game.name != game_name or existing_game.url != game_url:
                         existing_game.name = game_name
                         existing_game.url = game_url
                         session.commit()
+                    if existing_game is not None:
+                        game_id = existing_game.id
                     existing_review = session.query(Review).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Review(event_id, updated_at, updated_at, game_id, user_id, rating, review_text)
+                        new_review = Review(event_id, updated_at, updated_at, game_id, reviewer_id, rating, review_text)
                         session.query(Review). \
-                            filter(Review.game_id == new_review.game_id, Review.user_id == new_review.user_id). \
+                            filter(Review.game_id == new_review.game_id, Review.reviewer_id == new_review.reviewer_id). \
                             update({'hidden': True})
                         session.commit()
                         session.add(new_review)
