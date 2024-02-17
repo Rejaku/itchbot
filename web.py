@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, request
 from sqlalchemy import func
 
-from models import engine, Session, Base, Game, Review, Reviewer
+from models import engine, Session, Base, Game, Review, Reviewer, GameVersion
 
 app = Flask(__name__)
 
@@ -38,6 +38,13 @@ def reviews_route(game_id):
 def users_route(reviewer_id):
     return render_template('user_table.html', reviewer_id=reviewer_id)
 
+
+@app.route('/versions/<int:game_id>')
+def reviews_route(game_id):
+    with Session() as session:
+        game = session.query(Game).filter(Game.id == game_id).first()
+
+    return render_template('version_table.html', game_id=game.id, game_name=game.name)
 
 @app.route('/api/data')
 def api_data_route():
@@ -194,6 +201,42 @@ def api_users_route(reviewer_id):
 
         result = {
             'data': [game.to_dict() | review.to_dict() for review, game in reviews],
+            'total': total,
+        }
+
+    # response
+    return result
+
+@app.route('/api/versions/<int:game_id>')
+def api_versions_route(game_id):
+    with Session() as session:
+        game_versions = session.query(GameVersion).filter(GameVersion.game_id == int(game_id))
+        total = session.query(func.count(GameVersion.id)).filter(GameVersion.game_id == int(game_id))
+
+        # sorting
+        sort = request.args.get('sort') or '-released_at'
+        if sort:
+            order = []
+            for s in sort.split(','):
+                direction = s[0]
+                name = s[1:]
+                if name not in ['released_at', 'stats_menus', 'stats_words']:
+                    name = 'released_at'
+                col = getattr(GameVersion, name)
+                if direction == '-':
+                    col = col.desc()
+                order.append(col)
+            if order:
+                game_versions = game_versions.order_by(*order)
+
+        # pagination
+        start = request.args.get('start', type=int, default=-1)
+        length = request.args.get('length', type=int, default=-1)
+        if start != -1 and length != -1:
+            game_versions = game_versions.offset(start).limit(length)
+
+        result = {
+            'data': [game_version.to_dict() for game_version in game_versions],
             'total': total,
         }
 

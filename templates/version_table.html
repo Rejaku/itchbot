@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>FVNs</title>
+    <title>Release history for "{{ game_name }}"</title>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -53,7 +53,7 @@
 </head>
 <body>
 <div>
-    <h1>FVNs</h1>
+    <h1>Release history for "{{ game_name }}"</h1>
     <hr>
     <ul>
         <li>Planned Features: <a target="_blank" href="https://trello.com/b/p5dRvW4F/fvnli">Trello</a></li>
@@ -71,45 +71,19 @@
 
     new gridjs.Grid({
         columns: [
-            {id: 'url', name: 'URL', sort: false, hidden: true},
             {id: 'devlog', name: 'Devlog', sort: false, hidden: true},
-            {id: 'rating_count', name: 'Rating Count', sort: false, hidden: true},
             {id: 'platform_windows', name: 'Windows', sort: false, hidden: true},
             {id: 'platform_linux', name: 'Linux', sort: false, hidden: true},
             {id: 'platform_mac', name: 'Mac', sort: false, hidden: true},
             {id: 'platform_android', name: 'Android', sort: false, hidden: true},
             {id: 'platform_web', name: 'Web', sort: false, hidden: true},
-            {id: 'stats_blocks', name: 'Blocks', sort: false, hidden: true},
-            {id: 'stats_options', name: 'Options', sort: false, hidden: true},
-            {id: 'id', name: 'Game ID', sort: false, hidden: true},
             {
-                id: 'name', name: 'Name', formatter: (cell, row) => {
-                    return gridjs.html('<a href="' + row.cells[1].data + '">' + cell + '</a>');
-                }
-            },
-            {
-                id: 'thumb_url', name: 'Thumbnail', formatter: (cell, row) => {
-                    return cell ? gridjs.html('<a href="' + row.cells[1].data + '"><img src="' + cell + '" width="150" alt=""/></a>') : '';
-                }, sort: false
-            },
-            {id: 'description', name: 'Description', sort: false},
-            {
-                id: 'latest_version', name: 'Latest Version', formatter: (cell, row) => {
-                    return gridjs.html('<a href="/versions/' + row.cells[10].data + '">' + cell + '</a>');
+                id: 'version', name: 'Version', formatter: (cell, row) => {
+                    return gridjs.html('<a href="/versions/' + row.cells[0].data + '">' + cell + '</a>');
                 }, sort: false
             },
             {
-                id: 'rating', name: 'Rating', formatter: (cell, row) => {
-                    return gridjs.html('<a href="/reviews/' + row.cells[10].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
-                }
-            },
-            {
-                id: 'created_at', name: 'Published', formatter: (cell) => {
-                    return cell ? (new Date(cell * 1000)).toLocaleString() : '';
-                }
-            },
-            {
-                id: 'updated_at', name: 'Last Update', formatter: (cell) => {
+                id: 'released_at', name: 'Published', formatter: (cell) => {
                     return cell ? (new Date(cell * 1000)).toLocaleString() : '';
                 }
             },
@@ -123,38 +97,30 @@
                     return cell ? cell.toLocaleString() : '';
                 }
             },
-            {id: 'languages', name: 'Languages', sort: false},
             {
                 id: 'platforms', name: 'Platforms', formatter: (cell, row) => {
                     const platforms = [];
-                    if (row.cells[3].data) {
+                    if (row.cells[1].data) {
                         platforms.push('Windows');
                     }
-                    if (row.cells[4].data) {
+                    if (row.cells[2].data) {
                         platforms.push('Linux');
                     }
-                    if (row.cells[5].data) {
+                    if (row.cells[3].data) {
                         platforms.push('Mac');
                     }
-                    if (row.cells[6].data) {
+                    if (row.cells[4].data) {
                         platforms.push('Android');
                     }
-                    if (row.cells[7].data) {
+                    if (row.cells[5].data) {
                         platforms.push('Web');
                     }
                     return platforms.join(', ');
                 }, sort: false
             },
-            {id: 'game_engine', name: 'Engine'},
-            {id: 'status', name: 'Status'},
-            {
-                id: 'nsfw', name: 'NSFW', formatter: (cell) => {
-                    return cell ? 'NSFW' : 'SFW';
-                }
-            },
         ],
         server: {
-            url: '/api/data',
+            url: '/api/reviews/{{ reviewer_id }}',
             then: results => results.data,
             total: results => results.total,
         },
@@ -171,10 +137,9 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['url', 'devlog', 'rating_count', 'platform_windows', 'platform_linux',
+                    const columnIds = ['devlog', 'platform_windows', 'platform_linux',
                         'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options', 'id',
-                        'name', 'thumb_url', 'description', 'latest_version', 'rating', 'created_at', 'updated_at',
-                        'stats_menus', 'stats_words', 'languages', 'platforms', 'game_engine', 'status', 'nsfw'];
+                        'version', 'released_at', 'stats_menus', 'stats_words'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
