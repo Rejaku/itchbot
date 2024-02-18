@@ -36,7 +36,7 @@ class Game(Base):
     id = Column(Integer, primary_key=True)
     hidden = Column(BOOLEAN, default=False)
     service = Column(String(50), nullable=False)
-    game_id = Column(String(50), nullable=False)
+    game_id = Column(Integer, nullable=False)
     name = Column(String(200), nullable=False)
     description = Column(String(200))
     url = Column(String(250), nullable=False)
@@ -399,7 +399,7 @@ class GameVersion(Base):
     __tablename__ = 'game_versions'
 
     id = Column(Integer, primary_key=True)
-    game_id = Column(String(50), nullable=False)
+    game_id = Column(Integer, nullable=False)
     version = Column(String(20))
     devlog = Column(String(250))
     platform_windows = Column(Integer, nullable=False, default=0)
