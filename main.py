@@ -140,7 +140,7 @@ async def search(ctx, name):
                         await ctx.send(result.strip())
                         result = ''
                     result += f'{game.name}, Latest Version: {game.latest_version}, ' \
-                              f'Last Updated At: <t:{game.updated_at}:f> <{game.url}>\n'
+                              f'Last Updated At: <t:{int(game.updated_at)}:f> <{game.url}>\n'
             else:
                 result = f'Found no matches for "{name}"'
     else:

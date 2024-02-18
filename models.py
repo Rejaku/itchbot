@@ -248,7 +248,6 @@ class Game(Base):
                             self.platform_android = True
                             android_upload = upload
                 # Force update check by setting latest_timestamp to 0
-                save_latest_timestamp = True
                 if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
                     latest_timestamp = 0
                 else:
@@ -264,7 +263,6 @@ class Game(Base):
                         latest_timestamp = timestamp
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
-                                save_latest_timestamp = False
                                 version = upload['build']['user_version']
                                 if latest_version == version:
                                     continue
@@ -277,7 +275,6 @@ class Game(Base):
                                 # Extract version number from source string, matches anything from 1 to 1.2.3.4...
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
-                                    save_latest_timestamp = False
                                     version = matches.group(0).rstrip('.')
                                     if latest_version == version:
                                         continue
@@ -287,8 +284,10 @@ class Game(Base):
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = True
-                if save_latest_timestamp and latest_timestamp > 0 and (self.latest_version != latest_version or latest_version == 'unknown'):
+                if latest_timestamp > 0 and (self.latest_version != latest_version or latest_version == 'unknown'):
                     with Session() as session:
+                        self.latest_version = latest_version
+                        self.updated_at = latest_timestamp
                         # Add the new version to the database
                         game_version = GameVersion(self.id, self.latest_version, '', self.platform_windows,
                                                    self.platform_linux, self.platform_mac, self.platform_android,
@@ -297,8 +296,6 @@ class Game(Base):
                                                    self.updated_at, self.rating, self.rating_count)
                         session.add(game_version)
                         session.commit()
-                    self.latest_version = latest_version
-                    self.updated_at = latest_timestamp
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
