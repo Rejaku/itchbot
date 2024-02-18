@@ -544,12 +544,13 @@ class Review(Base):
 
         url = "https://itch.io/login"
         request_session = HTMLSession()
-        login = request_session.get(url)
+        login = request_session.get(url, timeout=5)
         s = BeautifulSoup(login.text, "html.parser")
         csrf_token = s.find("input", {"name": "csrf_token"})["value"]
         request_session.post(
             url,
-            {"username": ITCH_USER, "password": ITCH_PASSWORD, "csrf_token": csrf_token}
+            {"username": ITCH_USER, "password": ITCH_PASSWORD, "csrf_token": csrf_token},
+            timeout=5
         )
         return request_session
 
