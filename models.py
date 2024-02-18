@@ -155,7 +155,7 @@ class Game(Base):
                 devlog_links = devlog.find_all('a', href=True)
                 if devlog_links:
                     devlog_link = devlog_links[0]['href']
-                    with Session as session:
+                    with Session() as session:
                         game_version = session.query(GameVersion).filter(GameVersion.game_id == self.id) \
                             .order_by(GameVersion.created_at.desc()).first()
                         if game_version and game_version.devlog == '':

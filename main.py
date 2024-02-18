@@ -128,7 +128,7 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
 async def search(ctx, name):
     if name:
         await ctx.defer()
-        with Session as session:
+        with Session() as session:
             games = session.query(Game) \
                 .filter(Game.hidden == False, Game.name.contains(name)) \
                 .all()
