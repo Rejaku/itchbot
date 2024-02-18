@@ -50,17 +50,14 @@ def versions_route(game_id):
 def api_data_route():
     with Session() as session:
         games = session.query(Game)
-        totals = session.query(func.count(Game.id))
 
         # search filter
         search = request.args.get('search')
         if search:
             games = games.filter(Game.hidden == False, Game.name.like(f'%{search}%'))
-            totals = totals.filter(Game.hidden == False, Game.name.like(f'%{search}%'))
         else:
             games = games.filter(Game.hidden == False)
-            totals = totals.filter(Game.hidden == False)
-        total = totals.scalar()
+        total = games.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -97,7 +94,7 @@ def api_data_route():
 def api_reviews_route(game_id):
     with (Session() as session):
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True)
-        total = session.query(func.count(Review.id)).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True).scalar()
+        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -133,13 +130,6 @@ def api_reviews_route(game_id):
 def api_users_route(reviewer_id):
     with Session() as session:
         if reviewer_id == 'all':
-            total = session.query(func.count(Review.id)).join(
-                Game, Review.game_id == Game.id
-            ).filter(
-                Review.hidden == False,
-                Review.has_review == True,
-                Game.hidden == False
-            ).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
             ).filter(
@@ -148,9 +138,6 @@ def api_users_route(reviewer_id):
                 Game.hidden == False
             )
         elif reviewer_id == 'allall':
-            total = session.query(func.count(Review.id)).filter(
-                Review.hidden == False,
-                Review.has_review == True).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
             ).filter(
@@ -158,10 +145,6 @@ def api_users_route(reviewer_id):
                 Review.has_review == True
             )
         else:
-            total = session.query(func.count(Review.id)).filter(
-                Review.reviewer_id == int(reviewer_id),
-                Review.hidden == False,
-                Review.has_review == True).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
             ).filter(
@@ -169,6 +152,7 @@ def api_users_route(reviewer_id):
                 Review.hidden == False,
                 Review.has_review == True
             )
+        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -208,7 +192,7 @@ def api_users_route(reviewer_id):
 def api_versions_route(game_id):
     with Session() as session:
         game_versions = session.query(GameVersion).filter(GameVersion.game_id == int(game_id))
-        total = session.query(func.count(GameVersion.id)).filter(GameVersion.game_id == int(game_id)).scalar()
+        total = game_versions.count()
 
         # sorting
         sort = request.args.get('sort') or '-released_at'
