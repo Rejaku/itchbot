@@ -17,25 +17,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column('games', 'platform_windows', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('games', 'platform_linux', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('games', 'platform_mac', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('games', 'platform_android', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('games', 'platform_web', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('game_versions', 'platform_windows', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('game_versions', 'platform_linux', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('game_versions', 'platform_mac', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('game_versions', 'platform_android', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
-    op.alter_column('game_versions', 'platform_web', existing_type=sa.Integer, type_=sa.Boolean, server_default=False)
+    for table in ['games', 'game_versions']:
+        for column in ['platform_windows', 'platform_linux', 'platform_mac', 'platform_android', 'platform_web']:
+            op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} DROP DEFAULT')
+            op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} TYPE bool USING CASE WHEN {column}=0 THEN FALSE ELSE TRUE END')
+            op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} SET DEFAULT FALSE')
 
 def downgrade() -> None:
-    op.alter_column('games', 'platform_windows', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('games', 'platform_linux', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('games', 'platform_mac', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('games', 'platform_android', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('games', 'platform_web', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('game_versions', 'platform_windows', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('game_versions', 'platform_linux', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('game_versions', 'platform_mac', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('game_versions', 'platform_android', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
-    op.alter_column('game_versions', 'platform_web', existing_type=sa.Boolean, type_=sa.Integer, server_default=0)
+    for table in ['games', 'game_versions']:
+        for column in ['platform_windows', 'platform_linux', 'platform_mac', 'platform_android', 'platform_web']:
+            op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} DROP DEFAULT')
+            op.execute(f'ALTER TABLE {table} ALTER COLUMN {column} TYPE integer USING CASE WHEN {column}=FALSE THEN 0 ELSE 1 END')
