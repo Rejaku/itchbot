@@ -141,9 +141,9 @@
             multiColumn: true,
             server: {
                 url: (prev, columns) => {
-                    const columnIds = ['devlog', 'platform_windows', 'platform_linux',
+                    const columnIds = ['devlog', 'rating_count', 'platform_windows', 'platform_linux',
                         'platform_mac', 'platform_android', 'platform_web', 'stats_blocks', 'stats_options', 'id',
-                        'version', 'released_at', 'stats_menus', 'stats_words'];
+                        'version', 'released_at', 'stats_menus', 'stats_words', 'rating'];
                     const sort = columns.map(col => (col.direction === 1 ? '+' : '-') + columnIds[col.index]);
                     return updateUrl(prev, {sort});
                 },
