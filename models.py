@@ -49,11 +49,11 @@ class Game(Base):
     rating_count = Column(Integer)
     status = Column(String(50))
     error = Column(Text)
-    platform_windows = Column(Integer, nullable=False, default=0)
-    platform_linux = Column(Integer, nullable=False, default=0)
-    platform_mac = Column(Integer, nullable=False, default=0)
-    platform_android = Column(Integer, nullable=False, default=0)
-    platform_web = Column(Integer, nullable=False, default=0)
+    platform_windows = Column(BOOLEAN, nullable=False, default=False)
+    platform_linux = Column(BOOLEAN, nullable=False, default=False)
+    platform_mac = Column(BOOLEAN, nullable=False, default=False)
+    platform_android = Column(BOOLEAN, nullable=False, default=False)
+    platform_web = Column(BOOLEAN, nullable=False, default=False)
     stats_blocks = Column(Integer, nullable=False, default=0)
     stats_menus = Column(Integer, nullable=False, default=0)
     stats_options = Column(Integer, nullable=False, default=0)
@@ -66,7 +66,7 @@ class Game(Base):
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
-                 platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
+                 platform_windows=False, platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown',
                  created_at=0, updated_at=0, hidden=0, nsfw=False):
         self.service = service
@@ -222,30 +222,30 @@ class Game(Base):
 
             uploads = json.loads(response.text)
             if 'uploads' in uploads:
-                self.platform_windows = 0
-                self.platform_linux = 0
-                self.platform_mac = 0
-                self.platform_android = 0
-                self.platform_web = 0
+                self.platform_windows = False
+                self.platform_linux = False
+                self.platform_mac = False
+                self.platform_android = False
+                self.platform_web = False
                 linux_upload = None
                 windows_upload = None
                 android_upload = None
                 for upload in uploads['uploads']:
                     # For games that have no traits, check for a zip and assume Windows
                     if windows_upload is None and 'filename' in upload and upload['filename'].endswith('.zip'):
-                        self.platform_windows = 1
+                        self.platform_windows = True
                         windows_upload = upload
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
-                            self.platform_windows = 1
+                            self.platform_windows = True
                             windows_upload = upload
                         if 'p_linux' in upload['traits']:
-                            self.platform_linux = 1
+                            self.platform_linux = True
                             linux_upload = upload
                         if 'p_osx' in upload['traits']:
-                            self.platform_mac = 1
+                            self.platform_mac = True
                         if 'p_android' in upload['traits']:
-                            self.platform_android = 1
+                            self.platform_android = True
                             android_upload = upload
                 # Force update check by setting latest_timestamp to 0
                 save_latest_timestamp = True
@@ -287,7 +287,7 @@ class Game(Base):
                                         self.get_script_stats(itch_api_key, upload)
                                     break
                     if upload['type'] == 'html':
-                        self.platform_web = 1
+                        self.platform_web = True
                 if save_latest_timestamp and latest_timestamp > 0:
                     with Session() as session:
                         # Add the new version to the database
@@ -402,11 +402,11 @@ class GameVersion(Base):
     game_id = Column(Integer, nullable=False)
     version = Column(String(20))
     devlog = Column(String(250))
-    platform_windows = Column(Integer, nullable=False, default=0)
-    platform_linux = Column(Integer, nullable=False, default=0)
-    platform_mac = Column(Integer, nullable=False, default=0)
-    platform_android = Column(Integer, nullable=False, default=0)
-    platform_web = Column(Integer, nullable=False, default=0)
+    platform_windows = Column(BOOLEAN, nullable=False, default=False)
+    platform_linux = Column(BOOLEAN, nullable=False, default=False)
+    platform_mac = Column(BOOLEAN, nullable=False, default=False)
+    platform_android = Column(BOOLEAN, nullable=False, default=False)
+    platform_web = Column(BOOLEAN, nullable=False, default=False)
     stats_blocks = Column(Integer, nullable=False, default=0)
     stats_menus = Column(Integer, nullable=False, default=0)
     stats_options = Column(Integer, nullable=False, default=0)
