@@ -103,7 +103,7 @@
             },
             {
                 id: 'rating', name: 'Rating', formatter: (cell, row) => {
-                    return gridjs.html('<a href="/reviews/' + row.cells[1].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
+                    return gridjs.html(cell + ' (' + row.cells[2].data + ' votes)');
                 }
             },
             {

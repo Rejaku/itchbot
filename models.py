@@ -536,7 +536,9 @@ class Review(Base):
                            TypeError),
                           jitter=None,
                           base=60)
-    def get_request_sesstion():
+    def get_request_session():
+        print("\n[get_request_session] Attempting Login\n")
+
         ITCH_USER = os.environ['ITCH_USER']
         ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
 
@@ -562,9 +564,11 @@ class Review(Base):
 
         start_event_id = None
 
+        request_session = Review.get_request_session()
+
         while True:
             print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
-            start_event_id = Review.import_reviews(Review.get_request_sesstion(), start_event_id)
+            start_event_id = Review.import_reviews(request_session, start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
                 print("\n[reviews] Import finished: ", str(start_event_id), " ", str(end_event_id), "\n")
                 break
