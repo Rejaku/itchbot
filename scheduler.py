@@ -16,7 +16,7 @@ Base.metadata.create_all(engine)
 def refresh_tags_and_rating():
     print("\n[refresh_tags_and_rating] Start\n")
     with Session() as session:
-        games = session.query(Game).filter(Game.hidden == 0).all()
+        games = session.query(Game).filter(Game.hidden == False).all()
         for game in games:
             try:
                 game.refresh_tags_and_rating()
@@ -34,7 +34,7 @@ def refresh_version(itch_api_key, status=None):
     with Session() as session:
         if status:
             games = session.query(Game) \
-                .filter(Game.hidden == 0, Game.status.in_(status)) \
+                .filter(Game.hidden == False, Game.status.in_(status)) \
                 .order_by(Game.id) \
                 .all()
         else:
@@ -79,7 +79,7 @@ class Scheduler:
             with Session() as session:
                 for collection_entry in collection['collection_games']:
                     game = session.query(Game) \
-                        .filter(Game.hidden == 0, Game.game_id == collection_entry['game']['id']) \
+                        .filter(Game.hidden == False, Game.game_id == collection_entry['game']['id']) \
                         .first()
                     # Update if already in DB
                     if game:

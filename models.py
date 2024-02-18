@@ -34,7 +34,7 @@ class Game(Base):
     __tablename__ = 'games'
 
     id = Column(Integer, primary_key=True)
-    hidden = Column(BOOLEAN, default=0)
+    hidden = Column(BOOLEAN, default=False)
     service = Column(String(50), nullable=False)
     game_id = Column(String(50), nullable=False)
     name = Column(String(200), nullable=False)

@@ -55,11 +55,11 @@ def api_data_route():
         # search filter
         search = request.args.get('search')
         if search:
-            games = games.filter(Game.hidden == 0, Game.name.like(f'%{search}%'))
-            totals = totals.filter(Game.hidden == 0, Game.name.like(f'%{search}%'))
+            games = games.filter(Game.hidden == False, Game.name.like(f'%{search}%'))
+            totals = totals.filter(Game.hidden == False, Game.name.like(f'%{search}%'))
         else:
-            games = games.filter(Game.hidden == 0)
-            totals = totals.filter(Game.hidden == 0)
+            games = games.filter(Game.hidden == False)
+            totals = totals.filter(Game.hidden == False)
         total = totals.scalar()
 
         # sorting
@@ -96,8 +96,8 @@ def api_data_route():
 @app.route('/api/reviews/<int:game_id>')
 def api_reviews_route(game_id):
     with (Session() as session):
-        reviews = session.query(Review).with_hint(Review, 'USE INDEX (idx_reviews_game_id_hidden_has_review)').filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1)
-        total = session.query(func.count(Review.id)).with_hint(Review, 'USE INDEX (idx_reviews_game_id_hidden_has_review)').filter(Review.game_id == int(game_id), Review.hidden == 0, Review.has_review == 1).scalar()
+        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True)
+        total = session.query(func.count(Review.id)).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True).scalar()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -136,41 +136,38 @@ def api_users_route(reviewer_id):
             total = session.query(func.count(Review.id)).join(
                 Game, Review.game_id == Game.id
             ).filter(
-                Review.hidden == 0,
-                Review.has_review == 1,
-                Game.hidden == 0
+                Review.hidden == False,
+                Review.has_review == True,
+                Game.hidden == False
             ).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
-            ).with_hint(
-                Review,
-                'USE INDEX(idx_reviews_hidden_has_review)'
             ).filter(
-                Review.hidden == 0,
-                Review.has_review == 1,
-                Game.hidden == 0
+                Review.hidden == False,
+                Review.has_review == True,
+                Game.hidden == False
             )
         elif reviewer_id == 'allall':
             total = session.query(func.count(Review.id)).filter(
-                Review.hidden == 0,
-                Review.has_review == 1).scalar()
+                Review.hidden == False,
+                Review.has_review == True).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
             ).filter(
-                Review.hidden == 0,
-                Review.has_review == 1
+                Review.hidden == False,
+                Review.has_review == True
             )
         else:
             total = session.query(func.count(Review.id)).filter(
                 Review.reviewer_id == int(reviewer_id),
-                Review.hidden == 0,
-                Review.has_review == 1).scalar()
+                Review.hidden == False,
+                Review.has_review == True).scalar()
             reviews = session.query(Review, Game).join(
                 Game, Review.game_id == Game.id
             ).filter(
                 Review.reviewer_id == int(reviewer_id),
-                Review.hidden == 0,
-                Review.has_review == 1
+                Review.hidden == False,
+                Review.has_review == True
             )
 
         # sorting

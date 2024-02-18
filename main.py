@@ -40,7 +40,7 @@ async def notify_about_updates():
             ).join(
                 Game, GameVersion.game_id == Game.id
             ).filter(
-                Game.hidden == 0,
+                Game.hidden == False,
                 GameVersion.created_at > user.processed_at
             ).order_by(
                 Game.name
@@ -96,11 +96,11 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
         with Session() as session:
             if force:
                 games = session.query(Game) \
-                    .filter(Game.hidden == 0, Game.name.contains(name)) \
+                    .filter(Game.hidden == False, Game.name.contains(name)) \
                     .all()
             else:
                 games = session.query(Game) \
-                    .filter(Game.hidden == 0, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
+                    .filter(Game.hidden == False, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
                     .all()
             matches = len(games)
             if matches:
@@ -130,7 +130,7 @@ async def search(ctx, name):
         await ctx.defer()
         with Session as session:
             games = session.query(Game) \
-                .filter(Game.hidden == 0, Game.name.contains(name)) \
+                .filter(Game.hidden == False, Game.name.contains(name)) \
                 .all()
             matches = len(games)
             if matches:
