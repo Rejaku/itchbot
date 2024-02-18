@@ -295,7 +295,7 @@ class Game(Base):
                                                    self.platform_linux, self.platform_mac, self.platform_android,
                                                    self.platform_web, self.stats_blocks, self.stats_menus,
                                                    self.stats_options, self.stats_words, int(time.time()),
-                                                   self.updated_at)
+                                                   self.updated_at, self.rating, self.rating_count)
                         session.add(game_version)
                         session.commit()
                     self.updated_at = latest_timestamp
@@ -413,9 +413,12 @@ class GameVersion(Base):
     stats_words = Column(Integer, nullable=False, default=0)
     created_at = Column(Integer, nullable=False)
     released_at = Column(Integer, nullable=False)
+    rating = Column(Float)
+    rating_count = Column(Integer)
 
     def __init__(self, game_id, version, devlog, platform_windows, platform_linux, platform_mac, platform_android,
-                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, released_at):
+                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, released_at,
+                 rating, rating_count):
         self.game_id = game_id
         self.version = version
         self.devlog = devlog
@@ -430,6 +433,8 @@ class GameVersion(Base):
         self.stats_words = stats_words
         self.created_at = created_at
         self.released_at = released_at
+        self.rating = rating
+        self.rating_count = rating_count
 
     def to_dict(self):
         return {
@@ -447,7 +452,9 @@ class GameVersion(Base):
             'stats_options': self.stats_options,
             'stats_words': self.stats_words,
             'created_at': self.created_at,
-            'released_at': self.released_at
+            'released_at': self.released_at,
+            'rating': self.rating,
+            'rating_count': self.rating_count
         }
 
 class User(Base):

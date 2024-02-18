@@ -75,6 +75,7 @@
     new gridjs.Grid({
         columns: [
             {id: 'devlog', name: 'Devlog', sort: false, hidden: true},
+            {id: 'rating_count', name: 'Rating Count', sort: false, hidden: true},
             {id: 'platform_windows', name: 'Windows', sort: false, hidden: true},
             {id: 'platform_linux', name: 'Linux', sort: false, hidden: true},
             {id: 'platform_mac', name: 'Mac', sort: false, hidden: true},
@@ -101,21 +102,26 @@
                 }
             },
             {
+                id: 'rating', name: 'Rating', formatter: (cell, row) => {
+                    return gridjs.html('<a href="/reviews/' + row.cells[1].data + '">' + cell + ' (' + row.cells[2].data + ' votes)' + '</a>');
+                }
+            },
+            {
                 id: 'platforms', name: 'Platforms', formatter: (cell, row) => {
                     const platforms = [];
-                    if (row.cells[1].data) {
+                    if (row.cells[2].data) {
                         platforms.push('Windows');
                     }
-                    if (row.cells[2].data) {
+                    if (row.cells[3].data) {
                         platforms.push('Linux');
                     }
-                    if (row.cells[3].data) {
+                    if (row.cells[4].data) {
                         platforms.push('Mac');
                     }
-                    if (row.cells[4].data) {
+                    if (row.cells[5].data) {
                         platforms.push('Android');
                     }
-                    if (row.cells[5].data) {
+                    if (row.cells[6].data) {
                         platforms.push('Web');
                     }
                     return platforms.join(', ');
