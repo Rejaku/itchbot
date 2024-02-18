@@ -253,6 +253,7 @@ class Game(Base):
                     latest_timestamp = 0
                 else:
                     latest_timestamp = self.updated_at or 0
+                    latest_version = self.latest_version or 'unknown'
                 for upload in [linux_upload, windows_upload, android_upload]:
                     if upload is None:
                         continue
@@ -264,11 +265,10 @@ class Game(Base):
                         for version_number_source in ['build.user_version', 'filename', 'display_name']:
                             if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
                                 save_latest_timestamp = False
-                                latest_version = upload['build']['user_version']
-                                if self.latest_version == latest_version:
+                                version = upload['build']['user_version']
+                                if latest_version == version:
                                     continue
-                                self.updated_at = timestamp
-                                self.latest_version = latest_version
+                                latest_version = version
                                 if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                     self.get_script_stats(itch_api_key, upload)
                                 break
@@ -278,17 +278,16 @@ class Game(Base):
                                 matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
                                 if matches:
                                     save_latest_timestamp = False
-                                    latest_version = matches.group(0).rstrip('.')
-                                    if self.latest_version == latest_version:
+                                    version = matches.group(0).rstrip('.')
+                                    if latest_version == version:
                                         continue
-                                    self.updated_at = timestamp
-                                    self.latest_version = latest_version
+                                    latest_version = version
                                     if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                         self.get_script_stats(itch_api_key, upload)
                                     break
                     if upload['type'] == 'html':
                         self.platform_web = True
-                if save_latest_timestamp and latest_timestamp > 0:
+                if save_latest_timestamp and latest_timestamp > 0 and (self.latest_version != latest_version or latest_version == 'unknown'):
                     with Session() as session:
                         # Add the new version to the database
                         game_version = GameVersion(self.id, self.latest_version, '', self.platform_windows,
@@ -298,6 +297,7 @@ class Game(Base):
                                                    self.updated_at, self.rating, self.rating_count)
                         session.add(game_version)
                         session.commit()
+                    self.latest_version = latest_version
                     self.updated_at = latest_timestamp
 
     @backoff.on_exception(backoff.expo,

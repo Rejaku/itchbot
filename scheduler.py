@@ -132,9 +132,11 @@ class Scheduler:
         self.itch_api_key = itch_api_key
         self.itch_collection_id = itch_collection_id
 
+        refresh_version(itch_api_key, ['In development'])
+
         # makes our logic non-blocking
-        thread = threading.Thread(target=self.scheduler)
-        thread.start()
+        #thread = threading.Thread(target=self.scheduler)
+        #thread.start()
 
     def scheduler(self):
         print("\n[scheduler] Start\n")
