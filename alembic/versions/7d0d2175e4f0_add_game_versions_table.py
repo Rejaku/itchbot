@@ -20,7 +20,7 @@ def upgrade():
     op.create_table(
         'game_versions',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('game_id', sa.String(50), nullable=False),
+        sa.Column('game_id', sa.Integer, nullable=False),
         sa.Column('version', sa.String(20)),
         sa.Column('devlog', sa.String(250)),
         sa.Column('platform_windows', sa.Integer, nullable=False, default=0),

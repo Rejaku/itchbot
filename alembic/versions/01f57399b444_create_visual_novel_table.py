@@ -21,7 +21,7 @@ def upgrade():
         'visual_novels',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('service', sa.String(50), nullable=False),
-        sa.Column('game_id', sa.String(50), nullable=False),
+        sa.Column('game_id', sa.Integer, nullable=False),
         sa.Column('name', sa.String(50), nullable=False),
         sa.Column('description', sa.Unicode(200)),
         sa.Column('url', sa.String(250), nullable=False),

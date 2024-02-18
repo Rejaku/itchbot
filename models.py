@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 from shlex import quote
 
 engine = create_engine(
-    f'mariadb+pymysql://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?charset=utf8mb4',
+    f'postgresql+psycopg2://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?client_encoding=utf8',
     pool_pre_ping=True,
     pool_recycle=1800,
     echo=True

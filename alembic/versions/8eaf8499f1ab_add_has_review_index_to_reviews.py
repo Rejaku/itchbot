@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_index('idx_reviews_hidden_has_review', 'reviews', ['hidden', 'has_review'])
-    op.create_index('idx_reviews_user_id_hidden_has_review', 'reviews', ['user_id', 'hidden', 'has_review'])
+    op.create_index('idx_reviews_reviewer_id_hidden_has_review', 'reviews', ['reviewer_id', 'hidden', 'has_review'])
     op.create_index('idx_reviews_game_id_hidden_has_review', 'reviews', ['game_id', 'hidden', 'has_review'])
     op.drop_index('idx_reviews_user_id', 'reviews')
     op.drop_index('idx_reviews_game_id', 'reviews')
@@ -27,5 +27,5 @@ def downgrade() -> None:
     op.drop_index('idx_reviews_hidden_has_review', 'reviews')
     op.drop_index('idx_reviews_user_id_hidden_has_review', 'reviews')
     op.drop_index('idx_reviews_game_id_hidden_has_review', 'reviews')
-    op.create_index('idx_reviews_user_id', 'reviews', ['user_id'])
+    op.create_index('idx_reviews_user_id', 'reviews', ['reviewer_id'])
     op.create_index('idx_reviews_game_id', 'reviews', ['game_id'])

@@ -27,7 +27,7 @@ target_metadata = None
 
 
 def get_url():
-    return "mariadb+pymysql://%s:%s@db/%s" % (
+    return "postgresql+psycopg2://%s:%s@db/%s" % (
         os.environ["DB_USER"],
         os.environ["DB_PASSWORD"],
         os.environ["DB"],

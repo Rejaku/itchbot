@@ -35,10 +35,12 @@ def refresh_version(itch_api_key, status=None):
         if status:
             games = session.query(Game) \
                 .filter(Game.hidden == 0, Game.status.in_(status)) \
+                .order_by(Game.id) \
                 .all()
         else:
             games = session.query(Game) \
                 .filter(Game.status != 'Abandoned', Game.status != 'Canceled') \
+                .order_by(Game.id) \
                 .all()
         for game in games:
             try:
