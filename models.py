@@ -61,14 +61,14 @@ class Game(Base):
     game_engine = Column(String(50))
     created_at = Column(Integer, nullable=False)
     updated_at = Column(Integer)
-    nsfw = Column(BOOLEAN, default=0)
+    nsfw = Column(BOOLEAN, default=False)
     reviews = relationship("Review", back_populates="game")
 
     def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
                  tags=None, languages=None, rating=None, rating_count=None, status='In development',
                  platform_windows=0, platform_linux=0, platform_mac=0, platform_android=0, platform_web=0,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown',
-                 created_at=0, updated_at=0, hidden=0, nsfw=0):
+                 created_at=0, updated_at=0, hidden=0, nsfw=False):
         self.service = service
         self.game_id = game_id
         self.name = name
@@ -175,9 +175,9 @@ class Game(Base):
                     self.tags = tr.text.strip()[4:]
             nsfw = soup.find("div", {"class": "content_warning_inner"})
             if nsfw:
-                self.nsfw = 1
+                self.nsfw = True
             else:
-                self.nsfw = 0
+                self.nsfw = False
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
@@ -503,12 +503,12 @@ class Review(Base):
     reviewer_id = Column(Integer, ForeignKey('reviewers.id'))
     rating = Column(Integer, nullable=False)
     review = Column(Text)
-    hidden = Column(BOOLEAN, default=0)
+    hidden = Column(BOOLEAN, default=False)
     game = relationship("Game", back_populates="reviews")
     reviewer = relationship("Reviewer", back_populates="reviews")
-    has_review = Column(BOOLEAN, nullable=False, default=0)
+    has_review = Column(BOOLEAN, nullable=False, default=False)
 
-    def __init__(self, event_id, created_at, updated_at, game_id, reviewer_id, rating, review, hidden=0):
+    def __init__(self, event_id, created_at, updated_at, game_id, reviewer_id, rating, review, hidden=False):
         self.event_id = event_id
         self.created_at = created_at
         self.updated_at = updated_at
@@ -622,7 +622,7 @@ class Review(Base):
                         review_text = rating_blurb
                     existing_reviewer = session.query(Reviewer).filter_by(user_id=itch_user_id).first()
                     if existing_reviewer is None:
-                        new_reviewer = Reviewer(itch_user_id, user_name, updated_at, updated_at)
+                        new_reviewer = Reviewer(itch_user_id, str(user_name), updated_at, updated_at)
                         session.add(new_reviewer)
                         session.commit()
                         session.flush()
@@ -635,7 +635,7 @@ class Review(Base):
                         reviewer_id = existing_reviewer.id
                     existing_game = session.query(Game).filter_by(game_id=itch_game_id).first()
                     if existing_game is None:
-                        new_game = Game('itch', itch_game_id, game_name, '', game_url, '', hidden=1)
+                        new_game = Game('itch', itch_game_id, str(game_name), '', game_url, '', hidden=True)
                         session.add(new_game)
                         session.commit()
                         session.flush()
@@ -648,7 +648,7 @@ class Review(Base):
                         game_id = existing_game.id
                     existing_review = session.query(Review).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Review(event_id, updated_at, updated_at, game_id, reviewer_id, rating, review_text)
+                        new_review = Review(event_id, updated_at, updated_at, game_id, reviewer_id, rating, str(review_text))
                         session.query(Review). \
                             filter(Review.game_id == new_review.game_id, Review.reviewer_id == new_review.reviewer_id). \
                             update({'hidden': True})
