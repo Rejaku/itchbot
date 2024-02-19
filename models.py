@@ -231,31 +231,48 @@ class Game(Base):
                 linux_upload = None
                 windows_upload = None
                 android_upload = None
+                linux_upload_timestamp = 0
+                windows_upload_timestamp = 0
+                android_upload_timestamp = 0
                 for upload in uploads['uploads']:
+                    updated_at = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
+                    updated_at_timestamp = int(datetime.datetime.timestamp(updated_at))
+
                     # For games that have no traits, check for a zip and assume Windows
                     if windows_upload is None and 'filename' in upload and upload['filename'].endswith('.zip'):
                         self.platform_windows = True
-                        windows_upload = upload
+                        if windows_upload is None:
+                            windows_upload = upload
+                            windows_upload_timestamp = updated_at_timestamp
+                    if upload['type'] == 'html':
+                        self.platform_web = True
                     if upload['traits']:
                         if 'p_windows' in upload['traits']:
                             self.platform_windows = True
-                            windows_upload = upload
+                            if windows_upload is None:
+                                windows_upload = upload
+                                windows_upload_timestamp = updated_at_timestamp
                         if 'p_linux' in upload['traits']:
                             self.platform_linux = True
-                            linux_upload = upload
+                            if linux_upload is None:
+                                linux_upload = upload
+                                linux_upload_timestamp = updated_at_timestamp
                         if 'p_osx' in upload['traits']:
                             self.platform_mac = True
                         if 'p_android' in upload['traits']:
                             self.platform_android = True
-                            android_upload = upload
+                            if android_upload is None:
+                                android_upload = upload
+                                android_upload_timestamp = updated_at_timestamp
                 # Force update check by setting latest_timestamp to 0
                 if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
                     latest_timestamp = 0
                 else:
                     latest_timestamp = self.updated_at or 0
                 latest_version = self.latest_version or 'unknown'
+                parsed_stats = False
                 for upload in [linux_upload, windows_upload, android_upload]:
-                    if upload is None:
+                    if parsed_stats == True or upload is None:
                         continue
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
                     timestamp = int(datetime.datetime.timestamp(element))
@@ -270,6 +287,7 @@ class Game(Base):
                                 latest_version = version
                                 if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                     self.get_script_stats(itch_api_key, upload)
+                                parsed_stats = True
                                 break
                             elif upload.get(version_number_source):
                                 version_number_string = upload[version_number_source]
@@ -282,13 +300,13 @@ class Game(Base):
                                     latest_version = version
                                     if upload is linux_upload or (upload is windows_upload and linux_upload is None):
                                         self.get_script_stats(itch_api_key, upload)
+                                    parsed_stats = True
                                     break
-                    if upload['type'] == 'html':
-                        self.platform_web = True
-                if latest_timestamp > 0 and (self.latest_version != latest_version or latest_version == 'unknown'):
+                max_timestamp = max(latest_timestamp, windows_upload_timestamp, linux_upload_timestamp, android_upload_timestamp)
+                if self.updated_at != max_timestamp and (self.latest_version != latest_version or latest_version == 'unknown'):
                     with Session() as session:
                         self.latest_version = latest_version
-                        self.updated_at = latest_timestamp
+                        self.updated_at = max_timestamp
                         # Add the new version to the database
                         game_version = GameVersion(self.id, self.latest_version, '', self.platform_windows,
                                                    self.platform_linux, self.platform_mac, self.platform_android,
