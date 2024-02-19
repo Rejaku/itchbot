@@ -50,7 +50,7 @@ async def notify_about_updates():
                 result = f'Found {len(game_versions)} new updates:\n'
                 for game, game_version in game_versions:
                     result += f'{game.name}, Latest Version: {game_version.version}, ' \
-                              f'Last Updated At: <t:{int(game_version.released_at)}:f> <{game.url}>\n'
+                              f'Last Updated At: <t:{int(game_version.released_at)}:f> <{game.url}> | <{game_version.devlog}>\n'
                     if len(result) > 1600:
                         await discord_user.send(result)
                         result = ''

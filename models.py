@@ -156,12 +156,6 @@ class Game(Base):
                 devlog_links = devlog.find_all('a', href=True)
                 if devlog_links:
                     devlog_link = devlog_links[0]['href']
-                    with Session() as session:
-                        game_version = session.query(GameVersion).filter(GameVersion.game_id == self.id) \
-                            .order_by(GameVersion.created_at.desc()).first()
-                        if game_version and game_version.devlog == '':
-                            game_version.devlog = devlog_link
-                            session.commit()
                     self.devlog = devlog_link
             rating = soup.find("div", itemprop="ratingValue")
             rating_count = soup.find("span", itemprop="ratingCount")
@@ -304,15 +298,19 @@ class Game(Base):
                                     break
                 max_timestamp = max(latest_timestamp, windows_upload_timestamp, linux_upload_timestamp, android_upload_timestamp)
                 if self.updated_at != max_timestamp and (self.latest_version != latest_version or latest_version == 'unknown'):
-                    with Session() as session:
+                    with Session.object_session(self) as session:
                         self.latest_version = latest_version
                         self.updated_at = max_timestamp
+                        # Update the game's info & devlog link
+                        time.sleep(30)
+                        self.refresh_tags_and_rating()
                         # Add the new version to the database
-                        game_version = GameVersion(self.id, self.latest_version, '', self.platform_windows,
+                        game_version = GameVersion(self.id, self.latest_version, self.devlog, self.platform_windows,
                                                    self.platform_linux, self.platform_mac, self.platform_android,
                                                    self.platform_web, self.stats_blocks, self.stats_menus,
                                                    self.stats_options, self.stats_words, int(time.time()),
                                                    self.updated_at, self.rating, self.rating_count)
+                        session.add(self)
                         session.add(game_version)
                         session.commit()
 
