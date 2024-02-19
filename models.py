@@ -252,7 +252,7 @@ class Game(Base):
                     latest_timestamp = 0
                 else:
                     latest_timestamp = self.updated_at or 0
-                    latest_version = self.latest_version or 'unknown'
+                latest_version = self.latest_version or 'unknown'
                 for upload in [linux_upload, windows_upload, android_upload]:
                     if upload is None:
                         continue
