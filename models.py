@@ -28,6 +28,7 @@ engine = create_engine(
 Session = sessionmaker(bind=engine)
 
 Base = declarative_base()
+request_session = None
 
 
 class Game(Base):
@@ -534,6 +535,10 @@ class Review(Base):
                           jitter=None,
                           base=60)
     def get_request_session():
+        global request_session
+        if request_session is not None:
+            return request_session
+
         print("\n[get_request_session] Attempting Login\n")
 
         ITCH_USER = os.environ['ITCH_USER']
