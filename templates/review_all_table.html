@@ -63,21 +63,48 @@
         .gridjs-pagination {
             color: #fff;
         }
+        nav ul
+        {
+            padding-left: 0;
+            margin-left: 0;
+            background-color: #222222;
+            color: White;
+            float: left;
+            font-family: arial, helvetica, sans-serif;
+        }
+
+        nav ul li { display: inline; }
+
+        nav ul li a
+        {
+            padding: 0.8em 1.2em;
+            background-color: #222222;
+            color: White;
+            text-decoration: none;
+            float: left;
+            border-right: 1px solid #fff;
+        }
+
+        nav ul li a:hover
+        {
+            background-color: #707070;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 <div>
     <h1>All FVN Reviews</h1>
-    <hr>
+    <nav>
         <ul>
-        <li>Planned Features: <a target="_blank" href="https://trello.com/b/p5dRvW4F/fvnli">Trello</a></li>
-        <li>Contact @ Bluesky: <a target="_blank" href="https://bsky.app/profile/akiba.games">@akiba.games</a></li>
-        <li>Contact @ Twitter: <a target="_blank" href="https://twitter.com/AkibaOkapi">@AkibaOkapi</a></li>
-    </ul>
-    <hr>
-    <p>
-        Ratings without a review are not shown below.
-    </p>
+            <li><a href="/">Home</a></li>
+            <li><a href="/reviews/all">FVN itch reviews</a></li>
+            <li><a href="/reviews/allall">Global itch reviews</a></li>
+            <li><a target="_blank" href="https://trello.com/b/p5dRvW4F/fvnli">Planned Features: Trello</a></li>
+            <li><a target="_blank" href="https://bsky.app/profile/akiba.games">Bluesky: @akiba.games</a></li>
+            <li><a target="_blank" href="https://twitter.com/AkibaOkapi">Twitter: @AkibaOkapi</a></li>
+        </ul>
+    </nav>
     <div id="table"></div>
 </div>
 <script src="https://unpkg.com/gridjs@5/dist/gridjs.umd.js"></script>
