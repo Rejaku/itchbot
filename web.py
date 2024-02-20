@@ -243,11 +243,12 @@ def sitemap():
     # Static routes with static content
     static_urls = list()
     for rule in app.url_map.iter_rules():
-        if "GET" in rule.methods and len(rule.arguments) == 0:
-            url = {
-                "loc": f"{host_base}{str(rule)}"
-            }
-            static_urls.append(url)
+        if not str(rule).startswith("/sitemap") and not str(rule).startswith("/api"):
+            if "GET" in rule.methods and len(rule.arguments) == 0:
+                url = {
+                    "loc": f"{host_base}{str(rule)}"
+                }
+                static_urls.append(url)
 
     # Dynamic routes with dynamic content
     dynamic_urls = list()
