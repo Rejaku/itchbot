@@ -234,8 +234,8 @@ def api_versions_route(game_id):
 @app.route("/sitemap.xml")
 def sitemap():
     from flask import make_response, request, render_template
-    import datetime
     from urllib.parse import urlparse
+    from datetime import datetime
 
     host_components = urlparse(request.host_url)
     host_base = host_components.scheme + "://" + host_components.netloc
@@ -256,12 +256,12 @@ def sitemap():
     for game in games:
         url = {
             "loc": f"{host_base}/reviews/{game.id}",
-            "lastmod": game.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            "lastmod": datetime.utcfromtimestamp(game.updated_at).strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         dynamic_urls.append(url)
         url = {
             "loc": f"{host_base}/versions/{game.id}",
-            "lastmod": game.updated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            "lastmod": datetime.utcfromtimestamp(game.updated_at).strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         dynamic_urls.append(url)
 
