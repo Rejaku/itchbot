@@ -298,7 +298,7 @@ class Game(Base):
                                     break
                 max_timestamp = max(latest_timestamp, windows_upload_timestamp, linux_upload_timestamp, android_upload_timestamp)
                 if self.updated_at != max_timestamp and (self.latest_version != latest_version or latest_version == 'unknown'):
-                    with Session.object_session(self) as session:
+                    with Session() as session:
                         self.latest_version = latest_version
                         self.updated_at = max_timestamp
                         # Update the game's info & devlog link
@@ -310,7 +310,6 @@ class Game(Base):
                                                    self.platform_web, self.stats_blocks, self.stats_menus,
                                                    self.stats_options, self.stats_words, int(time.time()),
                                                    self.updated_at, self.rating, self.rating_count)
-                        session.add(self)
                         session.add(game_version)
                         session.commit()
 
