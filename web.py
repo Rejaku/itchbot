@@ -35,7 +35,7 @@ def reviews_route(game_id):
         if game:
             return redirect("/reviews/" + str(game.id))
     else:
-        return render_template('review_table.html', game_id=game.id, game_name=game.name, game_url=game.url)
+        return render_template('review_table.html', game=game)
     return "Game not found", 404
 
 

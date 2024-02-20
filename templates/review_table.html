@@ -1,6 +1,21 @@
 <html lang="en">
 <head>
-    <title>Reviews for "{{ game_name }}"</title>
+    <title>Reviews for "{{ game.name }}"</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "AggregateRating",
+      "itemReviewed": {
+        "@type": "Game",
+        "image": "{{ game.thumb_url }}",
+        "name": "{{ game.name }}"
+      },
+      "ratingValue": "{{ game.rating }}",
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": "{{ game.rating_count }}"
+    }
+    </script>
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
@@ -91,7 +106,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews for "<a target="_blank" href="{{ game_url }}">{{ game_name }}</a>"</h1>
+    <h1>Reviews for "<a target="_blank" href="{{ game.url }}">{{ game.name }}</a>"</h1>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
@@ -141,7 +156,7 @@
             }
         ],
         server: {
-            url: '/api/reviews/{{ game_id }}',
+            url: '/api/reviews/{{ game.id }}',
             then: results => results.data,
             total: results => results.total,
         },
