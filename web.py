@@ -31,7 +31,7 @@ def reviews_route(game_id):
     with Session() as session:
         game = session.query(Game).filter(Game.id == game_id).first()
 
-    return render_template('review_table.html', game_id=game.id, game_name=game.name)
+    return render_template('review_table.html', game_id=game.id, game_name=game.name, game_url=game.url)
 
 
 @app.route('/users/<int:reviewer_id>')
@@ -44,7 +44,7 @@ def versions_route(game_id):
     with Session() as session:
         game = session.query(Game).filter(Game.id == game_id).first()
 
-    return render_template('version_table.html', game_id=game.id, game_name=game.name)
+    return render_template('version_table.html', game_id=game.id, game_name=game.name, game_url=game.url)
 
 @app.route('/api/data')
 def api_data_route():
