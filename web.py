@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from sqlalchemy import func
 
 from models import engine, Session, Base, Game, Review, Reviewer, GameVersion
@@ -30,8 +30,13 @@ def reviews_allall_route():
 def reviews_route(game_id):
     with Session() as session:
         game = session.query(Game).filter(Game.id == game_id).first()
-
-    return render_template('review_table.html', game_id=game.id, game_name=game.name, game_url=game.url)
+    if game is None:
+        game = session.query(Game).filter(Game.game_id == game_id).first()
+        if game:
+            return redirect("/reviews/" + str(game.id))
+    else:
+        return render_template('review_table.html', game_id=game.id, game_name=game.name, game_url=game.url)
+    return "Game not found", 404
 
 
 @app.route('/users/<int:reviewer_id>')
