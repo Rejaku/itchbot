@@ -251,7 +251,8 @@ def sitemap():
 
     # Dynamic routes with dynamic content
     dynamic_urls = list()
-    games = Game.objects(hidden=False)
+    with Session() as session:
+        games = session.query(Game).filter(Game.hidden == False).all()
     for game in games:
         url = {
             "loc": f"{host_base}/reviews/{game.id}",
