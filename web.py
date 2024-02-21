@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, render_template, request, redirect
-from sqlalchemy import func, Integer
+from sqlalchemy import func, Integer, case
 
 from models import engine, Session, Base, Game, Review, Reviewer, GameVersion
 
@@ -16,7 +16,13 @@ HYPERLINK = '<a href="{}">{}</a>'
 
 @app.route('/')
 def games_route():
-    return render_template('server_table.html')
+    with Session() as session:
+        stats = session.query(
+            func.count('*').label('games'),
+            func.sum(case([(Game.hidden == False, 1)], else_=0)).label('fvns')
+        ).first()
+
+    return render_template('server_table.html', stats=stats)
 
 @app.route('/reviews/all')
 def reviews_all_route():
