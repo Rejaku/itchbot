@@ -103,7 +103,7 @@ def api_data_route():
     return result
 
 
-@app.route('/api/reviews/<game_info>')
+@app.route('/api/reviews/<game_key>')
 def api_reviews_route(game_key):
     with (Session() as session):
         if game_key.isdigit():
