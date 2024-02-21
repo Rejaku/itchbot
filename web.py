@@ -103,13 +103,10 @@ def api_data_route():
     return result
 
 
-@app.route('/api/reviews/<path:game_key>')
-def api_reviews_route(game_key):
+@app.route('/api/reviews/<int:game_id>')
+def api_reviews_route(game_id):
     with (Session() as session):
-        if game_key.isdigit():
-            reviews = session.query(Review).filter(Review.game_id == int(game_key), Review.hidden == False, Review.has_review == True)
-        else:
-            reviews = session.query(Review).filter(Review.url == game_key, Review.hidden == False, Review.has_review == True)
+        reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True)
         total = reviews.count()
 
         # sorting
