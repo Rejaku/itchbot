@@ -152,7 +152,7 @@
         server: {
             url: '/api/users/allall',
             then: results => results.data,
-            total: {{ stats.reviews }},
+            total: results => results.total,
         },
         search: {
             enabled: false,

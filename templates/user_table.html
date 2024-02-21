@@ -144,7 +144,7 @@
         server: {
             url: '/api/users/{{ reviewer_id }}',
             then: results => results.data,
-            total: {{ stats.reviews }}
+            total: results => results.total,
         },
         search: {
             enabled: false,
