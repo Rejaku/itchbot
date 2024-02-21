@@ -106,7 +106,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews for "<a target="_blank" href="{{ game.url }}">{{ game.name }}</a>"</h1>
+    <h1>Reviews for "<a target="_blank" href="{{ game.url }}">{{ game.name }}</a>" - Ratings: {{ stats.ratings }}, Reviews: {{ stats.reviews }}, Average rating: {{ stats.average|round(2) }}</h1>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
@@ -158,7 +158,7 @@
         server: {
             url: '/api/reviews/{{ game.id }}',
             then: results => results.data,
-            total: results => results.total,
+            total: {{ stats.reviews }}
         },
         search: {
             enabled: false,

@@ -20,11 +20,30 @@ def games_route():
 
 @app.route('/reviews/all')
 def reviews_all_route():
-    return render_template('review_all_table.html')
+    with Session() as session:
+        stats = session.query(
+            func.count('*').label('ratings'),
+            func.sum(Review.has_review.cast(Integer)).label('reviews'),
+            func.avg(Review.rating).label('average')
+        ).join(
+            Game, Review.game_id == Game.id
+        ).filter(
+            Review.hidden is False,
+            Game.hidden is False
+        ).first()
+    return render_template('review_all_table.html', stats=stats)
 
 @app.route('/reviews/allall')
 def reviews_allall_route():
-    return render_template('review_allall_table.html')
+    with Session() as session:
+        stats = session.query(
+            func.count('*').label('ratings'),
+            func.sum(Review.has_review.cast(Integer)).label('reviews'),
+            func.avg(Review.rating).label('average')
+        ).filter(
+            Review.hidden is False
+        ).first()
+    return render_template('review_allall_table.html', stats=stats)
 
 @app.route('/reviews/<int:game_id>')
 def reviews_route(game_id):
@@ -35,7 +54,15 @@ def reviews_route(game_id):
         if game:
             return redirect("/reviews/" + str(game.id))
     else:
-        return render_template('review_table.html', game=game)
+        stats = session.query(
+            func.count('*').label('ratings'),
+            func.sum(Review.has_review.cast(Integer)).label('reviews'),
+            func.avg(Review.rating).label('average')
+        ).filter(
+            Review.hidden == False,
+            Review.game_id == int(game_id)
+        ).first()
+        return render_template('review_table.html', game=game, stats=stats)
     return "Game not found", 404
 
 @app.route('/reviews/<path:game_url>')
@@ -43,7 +70,15 @@ def reviews_by_url_route(game_url):
     with Session() as session:
         game = session.query(Game).filter(Game.url == game_url).first()
     if game:
-        return render_template('review_table.html', game=game)
+        stats = session.query(
+            func.count('*').label('ratings'),
+            func.sum(Review.has_review.cast(Integer)).label('reviews'),
+            func.avg(Review.rating).label('average')
+        ).filter(
+            Review.hidden == False,
+            Review.game_id == int(game.id)
+        ).first()
+        return render_template('review_table.html', game=game, stats=stats)
 
     return "Game not found", 404
 
@@ -120,7 +155,6 @@ def api_data_route():
 def api_reviews_route(game_id):
     with (Session() as session):
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True)
-        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -145,8 +179,7 @@ def api_reviews_route(game_id):
             reviews = reviews.offset(start).limit(length)
 
         result = {
-            'data': [review.to_dict() for review in reviews],
-            'total': total,
+            'data': [review.to_dict() for review in reviews]
         }
 
     # response
@@ -178,7 +211,6 @@ def api_users_route(reviewer_id):
                 Review.hidden == False,
                 Review.has_review == True
             )
-        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -207,8 +239,7 @@ def api_users_route(reviewer_id):
             reviews = reviews.offset(start).limit(length)
 
         result = {
-            'data': [game.to_dict() | review.to_dict() for review, game in reviews],
-            'total': total,
+            'data': [game.to_dict() | review.to_dict() for review, game in reviews]
         }
 
     # response

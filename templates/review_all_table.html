@@ -95,7 +95,7 @@
 </head>
 <body>
 <div>
-    <h1>All FVN Reviews</h1>
+    <h1>All FVN Reviews - Ratings: {{ stats.ratings }}, Reviews: {{ stats.reviews }}, Average rating: {{ stats.average|round(2) }}</h1>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
@@ -152,7 +152,7 @@
         server: {
             url: '/api/users/all',
             then: results => results.data,
-            total: results => results.total,
+            total: {{ stats.reviews }},
         },
         search: {
             enabled: false,
