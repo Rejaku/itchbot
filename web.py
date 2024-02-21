@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, render_template, request, redirect
-from sqlalchemy import func
+from sqlalchemy import func, Integer
 
 from models import engine, Session, Base, Game, Review, Reviewer, GameVersion
 
@@ -49,7 +49,20 @@ def reviews_by_url_route(game_url):
 
 @app.route('/users/<int:reviewer_id>')
 def users_route(reviewer_id):
-    return render_template('user_table.html', reviewer_id=reviewer_id)
+    with Session() as session:
+        stats = session.query(
+            func.count('*').label('ratings'),
+            func.sum(Review.has_review.cast(Integer)).label('reviews'),
+            func.avg(Review.rating).label('average')
+        ).filter(
+            Review.hidden == False,
+            Review.reviewer_id == int(reviewer_id)
+        ).first()
+
+    if stats.ratings > 0:
+        return render_template('user_table.html', reviewer_id=reviewer_id, stats=stats)
+
+    return "User not found", 404
 
 
 @app.route('/versions/<int:game_id>')
