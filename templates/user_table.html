@@ -92,7 +92,7 @@
 </head>
 <body>
 <div>
-    <h1>Reviews by "{{ reviewer_id }}"</h1>
+    <h1>Reviews by "{{ reviewer_id }}" - Ratings: {{ stats.ratings }}, Reviews: {{ stats.reviews }}, Average rating: {{ stats.average|round(2) }}</h1>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
@@ -103,13 +103,6 @@
             <li><a target="_blank" href="https://twitter.com/AkibaOkapi">Twitter: @AkibaOkapi</a></li>
         </ul>
     </nav>
-    <div>
-        <ul>
-            <li>Number of ratings: {{ stats.ratings }}</li>
-            <li>Number of reviews: {{ stats.reviews }}</li>
-            <li>Average rating: {{ stats.average }}</li>
-        </ul>
-    </div>
     <div id="table"></div>
 </div>
 <script src="https://unpkg.com/gridjs@5/dist/gridjs.umd.js"></script>
