@@ -28,8 +28,8 @@ def reviews_all_route():
         ).join(
             Game, Review.game_id == Game.id
         ).filter(
-            Review.hidden is False,
-            Game.hidden is False
+            Review.hidden == False,
+            Game.hidden == False
         ).first()
     return render_template('review_all_table.html', stats=stats)
 
@@ -41,7 +41,7 @@ def reviews_allall_route():
             func.sum(Review.has_review.cast(Integer)).label('reviews'),
             func.avg(Review.rating).label('average')
         ).filter(
-            Review.hidden is False
+            Review.hidden == False
         ).first()
     return render_template('review_allall_table.html', stats=stats)
 
