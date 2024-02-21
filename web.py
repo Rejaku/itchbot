@@ -38,7 +38,7 @@ def reviews_route(game_id):
         return render_template('review_table.html', game=game)
     return "Game not found", 404
 
-@app.route('/reviews/<str:game_url>')
+@app.route('/reviews/<string:game_url>')
 def reviews_by_url_route(game_url):
     with Session() as session:
         game = session.query(Game).filter(Game.url == game_url).first()
