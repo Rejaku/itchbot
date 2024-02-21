@@ -114,6 +114,8 @@
         return prev + (prev.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams(query).toString();
     };
 
+    const total = {{ stats.reviews }};
+
     new gridjs.Grid({
         columns: [
             {id: 'event_id', name: 'Event ID', sort: false, hidden: true},
@@ -152,7 +154,7 @@
         server: {
             url: '/api/users/allall',
             then: results => results.data,
-            total: {{ stats.reviews }},
+            total: total,
         },
         search: {
             enabled: false,
