@@ -238,17 +238,14 @@ def sitemap():
     from datetime import datetime
 
     host_components = urlparse(request.host_url)
-    host_base = host_components.scheme + "://" + host_components.netloc
+    host_base = "https://" + host_components.netloc
 
     # Static routes with static content
     static_urls = list()
-    for rule in app.url_map.iter_rules():
-        if not str(rule).startswith("/sitemap") and not str(rule).startswith("/api"):
-            if "GET" in rule.methods and len(rule.arguments) == 0:
-                url = {
-                    "loc": f"{host_base}{str(rule)}"
-                }
-                static_urls.append(url)
+    url = {
+        "loc": f"{host_base}{'/'}"
+    }
+    static_urls.append(url)
 
     # Dynamic routes with dynamic content
     dynamic_urls = list()
