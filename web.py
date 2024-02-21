@@ -19,7 +19,7 @@ def games_route():
     with Session() as session:
         stats = session.query(
             func.count('*').label('games'),
-            func.sum(case([(Game.hidden == False, 1)], else_=0)).label('fvns')
+            func.sum(case((Game.hidden == False, 1), else_=0)).label('fvns')
         ).first()
 
     return render_template('server_table.html', stats=stats)
