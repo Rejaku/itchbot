@@ -155,6 +155,7 @@ def api_data_route():
 def api_reviews_route(game_id):
     with (Session() as session):
         reviews = session.query(Review).filter(Review.game_id == int(game_id), Review.hidden == False, Review.has_review == True)
+        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -179,7 +180,8 @@ def api_reviews_route(game_id):
             reviews = reviews.offset(start).limit(length)
 
         result = {
-            'data': [review.to_dict() for review in reviews]
+            'data': [review.to_dict() for review in reviews],
+            'total': total,
         }
 
     # response
@@ -211,6 +213,7 @@ def api_users_route(reviewer_id):
                 Review.hidden == False,
                 Review.has_review == True
             )
+        total = reviews.count()
 
         # sorting
         sort = request.args.get('sort') or '-updated_at'
@@ -239,7 +242,8 @@ def api_users_route(reviewer_id):
             reviews = reviews.offset(start).limit(length)
 
         result = {
-            'data': [game.to_dict() | review.to_dict() for review, game in reviews]
+            'data': [game.to_dict() | review.to_dict() for review, game in reviews],
+            'total': total,
         }
 
     # response
