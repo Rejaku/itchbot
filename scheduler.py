@@ -79,10 +79,11 @@ class Scheduler:
             with Session() as session:
                 for collection_entry in collection['collection_games']:
                     game = session.query(Game) \
-                        .filter(Game.hidden == False, Game.game_id == collection_entry['game']['id']) \
+                        .filter(Game.game_id == collection_entry['game']['id']) \
                         .first()
                     # Update if already in DB
                     if game:
+                        game.hidden = False
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
                                 or collection_entry['game'].get('cover_url') != game.thumb_url:
