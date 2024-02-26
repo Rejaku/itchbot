@@ -332,6 +332,13 @@ def sitemap():
 
     return response
 
+@app.route("/robots.txt")
+def robots():
+    from flask import make_response
+    response = make_response("User-agent: *\nDisallow: /users\nDisallow: /api")
+    response.headers["Content-Type"] = "text/plain"
+    return response
+
 
 if __name__ == "__main__":
     from waitress import serve
