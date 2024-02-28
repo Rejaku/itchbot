@@ -99,8 +99,8 @@
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
-            <li><a href="/reviews/all">FVN itch reviews</a></li>
-            <li><a href="/reviews/allall">Global itch reviews</a></li>
+            <li><a rel="nofollow" href="/reviews/all">FVN itch reviews</a></li>
+            <li><a rel="nofollow" href="/reviews/allall">Global itch reviews</a></li>
             <li><a target="_blank" href="https://trello.com/b/p5dRvW4F/fvnli">Planned Features: Trello</a></li>
             <li><a target="_blank" href="https://bsky.app/profile/akiba.games">Bluesky: @akiba.games</a></li>
             <li><a target="_blank" href="https://twitter.com/AkibaOkapi">Twitter: @AkibaOkapi</a></li>
@@ -125,7 +125,7 @@
             },
             {
                 id: 'name', name: 'Game Name', formatter: (cell, row) => {
-                    return gridjs.html('<a href="/reviews/' + row.cells[1].data + '">' + cell + '</a>');
+                    return gridjs.html('<a rel="nofollow" href="/reviews/' + row.cells[1].data + '">' + cell + '</a>');
                 }
             },
             {
@@ -139,8 +139,8 @@
                 }, sort: false
             },
             {
-                id: 'reviewer_id', name: 'User Reviews', formatter: (cell) => {
-                    return gridjs.html('<a href="/users/' + cell + '">All reviews by user</a>');
+                id: 'reviewer_id', name: 'User Reviews', formatter: (cell, row) => {
+                    return gridjs.html('<a rel="nofollow" href="/users/' + cell + '">All reviews by user</a>');
                 }
             },
             {
