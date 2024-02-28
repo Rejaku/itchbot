@@ -58,7 +58,7 @@ def reviews_route(game_id):
     if game is None:
         game = session.query(Game).filter(Game.game_id == game_id).first()
         if game:
-            return redirect("/reviews/" + str(game.id))
+            return redirect("/reviews/" + str(game.id), 301)
     else:
         stats = session.query(
             func.count('*').label('ratings'),
