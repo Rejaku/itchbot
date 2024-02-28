@@ -1,21 +1,25 @@
 <html lang="en">
 <head>
     <title>Reviews for "{{ game.name }}"</title>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org/",
-      "@type": "AggregateRating",
-      "itemReviewed": {
-        "@type": "Game",
-        "image": "{{ game.thumb_url }}",
-        "name": "{{ game.name }}"
-      },
-      "ratingValue": "{{ game.rating }}",
-      "bestRating": "5",
-      "worstRating": "1",
-      "ratingCount": "{{ game.rating_count }}"
-    }
-    </script>
+    {% if game.rating_count %}
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org/",
+          "@type": "AggregateRating",
+          "itemReviewed": {
+            "@type": "Game",
+            "image": "{{ game.thumb_url }}",
+            "name": "{{ game.name }}"
+          },
+          "ratingValue": "{{ game.rating }}",
+          "bestRating": "5",
+          "worstRating": "1",
+          "ratingCount": "{{ game.rating_count }}"
+        }
+        </script>
+    {% else %}
+        <meta name="robots" content="noindex">
+    {% endif %}
     <link href="https://unpkg.com/gridjs@5/dist/theme/mermaid.min.css" rel="stylesheet"/>
     <style>
         body {
