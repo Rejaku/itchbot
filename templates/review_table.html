@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
     <title>Reviews for "{{ game.name }}"</title>
-    {% if game.rating_count %}
+    {% if stats.ratings %}
         <script type="application/ld+json">
         {
           "@context": "https://schema.org/",
@@ -11,10 +11,10 @@
             "image": "{{ game.thumb_url }}",
             "name": "{{ game.name }}"
           },
-          "ratingValue": "{{ game.rating }}",
+          "ratingValue": "{{ stats.average|round(2) }}",
           "bestRating": "5",
           "worstRating": "1",
-          "ratingCount": "{{ game.rating_count }}"
+          "ratingCount": "{{ stats.ratings }}"
         }
         </script>
     {% else %}
