@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
     <title>Reviews for "{{ game.name }}"</title>
-    {% if stats.ratings %}
+    {% if game.hidden != False and stats.ratings %}
         <script type="application/ld+json">
         {
           "@context": "https://schema.org/",
