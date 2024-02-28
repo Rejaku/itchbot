@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>Release history for "{{ game_name }}"</title>
+    <title>Release history for "{{ game.name }}"</title>
     {% if game.hidden %}
         <meta name="robots" content="noindex">
     {% endif %}
@@ -86,7 +86,7 @@
 </head>
 <body>
 <div>
-    <h1>Release history for "<a target="_blank" href="{{ game_url }}">{{ game_name }}</a>"</h1>
+    <h1>Release history for "<a target="_blank" href="{{ game.url }}">{{ game.name }}</a>"</h1>
     <nav>
         <ul>
             <li><a href="/">Home</a></li>
@@ -162,7 +162,7 @@
             },
         ],
         server: {
-            url: '/api/versions/{{ game_id }}',
+            url: '/api/versions/{{ game.id }}',
             then: results => results.data,
             total: results => results.total,
         },
