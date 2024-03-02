@@ -3,6 +3,7 @@
 import datetime
 import json
 import os
+import random
 import re
 import subprocess
 import zipfile
@@ -26,9 +27,21 @@ engine = create_engine(
     echo=True
 )
 Session = sessionmaker(bind=engine)
+proxy_list = os.environ["PROXY_LIST"].split(',')
 
 Base = declarative_base()
 request_session = None
+
+
+def proxy_request(request_type, url, **kwargs):
+    proxy = random.randint(0, len(proxy_list) - 1)
+    proxies = {
+        "http": 'http://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
+        "https": 'https://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
+    }
+    print(f"Proxy currently being used: {proxy_list[proxy]}")
+    response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
+    return response
 
 
 class Game(Base):
@@ -137,7 +150,7 @@ class Game(Base):
                           base=60)
     def refresh_tags_and_rating(self):
         print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
-        with requests.get(self.url, timeout=5, allow_redirects=True) as response:
+        with proxy_request("get", self.url, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("\n[refresh_tags_and_rating] Status 404\n")
                 return
@@ -183,7 +196,7 @@ class Game(Base):
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + str(self.game_id)
         print("\n[refresh_base_info] URL: " + url + "\n")
-        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
+        with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("\n[refresh_base_info] Status 404\n")
                 return
@@ -207,7 +220,7 @@ class Game(Base):
     def refresh_version(self, itch_api_key, force: bool = False):
         url = 'https://api.itch.io/games/' + str(self.game_id) + '/uploads'
         print("\n[refresh_version] URL: " + url + "\n")
-        with requests.get(url, headers={'Authorization': itch_api_key}, timeout=5, allow_redirects=True) as response:
+        with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("\n[refresh_version] Status 404\n")
                 return
@@ -302,7 +315,7 @@ class Game(Base):
                         self.latest_version = latest_version
                         self.updated_at = max_timestamp
                         # Update the game's info & devlog link
-                        time.sleep(30)
+                        time.sleep(10)
                         self.refresh_tags_and_rating()
                         # Add the new version to the database
                         game_version = GameVersion(self.id, self.latest_version, self.devlog, self.platform_windows,
@@ -330,12 +343,12 @@ class Game(Base):
         url = self.url + '/file/' + str(upload_info['id'])
         print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
-        with requests.post(url, headers={'Authorization': itch_api_key}, timeout=5) as response:
+        with proxy_request("post", url, headers={'Authorization': itch_api_key}) as response:
             download = json.loads(response.text)
             if 'url' in download:
                 download_path = 'tmp/' + upload_info['filename']
                 try:
-                    file = requests.get(download['url'], allow_redirects=True)
+                    file = proxy_request("get", download['url'], allow_redirects=True)
                     open(download_path, 'wb').write(file.content)
                 except RequestException as error:
                     self.error = error
@@ -630,7 +643,6 @@ class Review(Base):
                     if game_cell:
                         itch_game_id = int(game_cell['data-game_id'])
                     else:
-                        time.sleep(30)
                         itch_game_id = int(Review.get_game_id(game_url))
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
@@ -689,7 +701,7 @@ class Review(Base):
                           base=60)
     def get_game_id(url):
         print("\n[get_game_id] URL: " + url + "\n")
-        with requests.get(url, timeout=5, allow_redirects=True) as response:
+        with proxy_request("get", url, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("\n[get_game_id] Status 404\n")
                 return None

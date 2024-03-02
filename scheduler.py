@@ -25,7 +25,7 @@ def refresh_tags_and_rating():
                 print("\n[Update Error] ", exception, "\n")
                 game.error = exception
             session.commit()
-            time.sleep(30)
+            time.sleep(10)
     print("\n[refresh_tags_and_rating] End\n")
 
 
@@ -50,7 +50,7 @@ def refresh_version(itch_api_key, status=None):
                 print("\n[Update Error] ", exception, "\n")
                 game.error = str(exception)
             session.commit()
-            time.sleep(30)
+            time.sleep(10)
     print("\n[refresh_version] End\n")
 
 
@@ -66,10 +66,10 @@ class Scheduler:
                           jitter=None,
                           base=60)
     def update_watchlist_page(self, page: int):
-        with requests.get(
+        with models.proxy_request(
+                'get',
                 'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
-                headers={'Authorization': self.itch_api_key},
-                timeout=5
+                headers={'Authorization': self.itch_api_key}
         ) as response:
             collection = json.loads(response.text)
             if len(collection['collection_games']) == 0:
