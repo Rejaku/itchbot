@@ -1,5 +1,5 @@
 # This bot requires the 'message_content' privileged intent to function.
-
+import datetime
 import os
 import time
 
@@ -34,13 +34,13 @@ async def notify_about_updates():
         users = session.query(User)
         print("\n[notify_about_updates] User loop\n")
         for user in users:
-            start_time = time.time()
+            start_time = datetime.datetime.now()
             game_versions = session.query(
                 Game, GameVersion
             ).join(
                 Game, GameVersion.game_id == Game.id
             ).filter(
-                Game.hidden == False,
+                Game.visible == True,
                 GameVersion.created_at > user.processed_at
             ).order_by(
                 Game.name
@@ -50,13 +50,13 @@ async def notify_about_updates():
                 result = f'Found {len(game_versions)} new updates:\n'
                 for game, game_version in game_versions:
                     result += f'{game.name}, Latest Version: {game_version.version}, ' \
-                              f'Last Updated At: <t:{int(game_version.released_at)}:f> <{game.url}> | <{game_version.devlog}>\n'
+                              f'Last Updated At: <t:{game_version.published_at}:f> <{game.url}> | <{game_version.devlog}>\n'
                     if len(result) > 1600:
                         await discord_user.send(result)
                         result = ''
                 if result:
                     await discord_user.send(result)
-                user.processed_at = int(start_time)
+                user.processed_at = start_time
                 session.commit()
 
 
@@ -96,11 +96,11 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
         with Session() as session:
             if force:
                 games = session.query(Game) \
-                    .filter(Game.hidden == False, Game.name.contains(name)) \
+                    .filter(Game.visible == True, Game.name.contains(name)) \
                     .all()
             else:
                 games = session.query(Game) \
-                    .filter(Game.hidden == False, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
+                    .filter(Game.visible == True, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
                     .all()
             matches = len(games)
             if matches:
@@ -130,7 +130,7 @@ async def search(ctx, name):
         await ctx.defer()
         with Session() as session:
             games = session.query(Game) \
-                .filter(Game.hidden == False, Game.name.contains(name)) \
+                .filter(Game.visible == True, Game.name.contains(name)) \
                 .all()
             matches = len(games)
             if matches:
@@ -139,8 +139,8 @@ async def search(ctx, name):
                     if len(result) > 1600:
                         await ctx.send(result.strip())
                         result = ''
-                    result += f'{game.name}, Latest Version: {game.latest_version}, ' \
-                              f'Last Updated At: <t:{int(game.updated_at)}:f> <{game.url}>\n'
+                    result += f'{game.name}, Latest Version: {game.version}, ' \
+                              f'Last Updated At: <t:{game.version_published_at}:f> <{game.url}>\n'
             else:
                 result = f'Found no matches for "{name}"'
     else:

@@ -16,7 +16,7 @@ Base.metadata.create_all(engine)
 def refresh_tags_and_rating():
     print("\n[refresh_tags_and_rating] Start\n")
     with Session() as session:
-        games = session.query(Game).filter(Game.hidden == False).all()
+        games = session.query(Game).filter(Game.visible == True).all()
         for game in games:
             try:
                 game.refresh_tags_and_rating()
@@ -34,7 +34,7 @@ def refresh_version(itch_api_key, status=None):
     with Session() as session:
         if status:
             games = session.query(Game) \
-                .filter(Game.hidden == False, Game.status.in_(status)) \
+                .filter(Game.visible == True, Game.status.in_(status)) \
                 .order_by(Game.id) \
                 .all()
         else:
@@ -83,7 +83,7 @@ class Scheduler:
                         .first()
                     # Update if already in DB
                     if game:
-                        game.hidden = False
+                        game.visible = True
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
                                 or collection_entry['game'].get('cover_url') != game.thumb_url:
@@ -92,22 +92,21 @@ class Scheduler:
                             game.thumb_url = collection_entry['game'].get('cover_url')
                             session.commit()
                         if game.created_at == 0:
-                            game.created_at = int(datetime.datetime.fromisoformat(
+                            game.created_at = datetime.datetime.fromisoformat(
                                 collection_entry['game']['published_at']
-                            ).timestamp())
+                            )
                             session.commit()
                     else:
                         game = Game(
-                            service='itch',
                             game_id=collection_entry['game']['id'],
                             name=collection_entry['game']['title'],
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
-                            latest_version='unknown',
-                            created_at=int(datetime.datetime.fromisoformat(
+                            version='unknown',
+                            created_at=datetime.datetime.fromisoformat(
                                 collection_entry['game']['published_at']
-                            ).timestamp()),
+                            ),
                             updated_at=0
                         )
                         session.add(game)
@@ -139,7 +138,7 @@ class Scheduler:
 
     def scheduler(self):
         print("\n[scheduler] Start\n")
-        schedule.every(15).minutes.do(models.Review.import_latest_reviews)
+        schedule.every(15).minutes.do(models.Rating.import_latest_reviews)
         schedule.every(6).hours.do(refresh_version, self.itch_api_key, ['In development'])
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating)

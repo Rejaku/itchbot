@@ -15,7 +15,8 @@ import backoff
 import requests
 from requests import RequestException
 from requests_html import HTMLSession
-from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey
+from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
+    Identity
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from bs4 import BeautifulSoup
 from shlex import quote
@@ -47,22 +48,25 @@ def proxy_request(request_type, url, **kwargs):
 class Game(Base):
     __tablename__ = 'games'
 
-    id = Column(Integer, primary_key=True)
-    hidden = Column(BOOLEAN, default=False)
-    service = Column(String(50), nullable=False)
+    id = Column(BigInteger, (Identity()), primary_key=True)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    initially_published_at = Column(DateTime)
+    version_published_at = Column(DateTime)
     game_id = Column(Integer, nullable=False)
     name = Column(String(200), nullable=False)
+    status = Column(String(50))
+    visible = Column(BOOLEAN, default=False)
+    nsfw = Column(BOOLEAN, default=False)
     description = Column(String(200))
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
-    latest_version = Column(String(20))
-    devlog = Column(String(250))
+    version = Column(String(20))
     tags = Column(String(250))
-    languages = Column(String(250))
     rating = Column(Float)
     rating_count = Column(Integer)
-    status = Column(String(50))
-    error = Column(Text)
+    devlog = Column(String(250))
+    languages = Column(String(250))
     platform_windows = Column(BOOLEAN, nullable=False, default=False)
     platform_linux = Column(BOOLEAN, nullable=False, default=False)
     platform_mac = Column(BOOLEAN, nullable=False, default=False)
@@ -73,29 +77,32 @@ class Game(Base):
     stats_options = Column(Integer, nullable=False, default=0)
     stats_words = Column(Integer, nullable=False, default=0)
     game_engine = Column(String(50))
-    created_at = Column(Integer, nullable=False)
-    updated_at = Column(Integer)
-    nsfw = Column(BOOLEAN, default=False)
-    reviews = relationship("Review", back_populates="game")
+    error = Column(Text)
+    ratings = relationship("Rating", back_populates="game")
 
-    def __init__(self, service, game_id, name, description, url, thumb_url, latest_version='unknown', devlog=None,
-                 tags=None, languages=None, rating=None, rating_count=None, status='In development',
-                 platform_windows=False, platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
-                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown',
-                 created_at=0, updated_at=0, hidden=0, nsfw=False):
-        self.service = service
+    def __init__(self, created_at=None, updated_at=None, initial_published_at=None, version_published_at=None, game_id=None, name=None,
+                 status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None, version='unknown',
+                 tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
+                 platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
+                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown'):
+        self.created_at = created_at or datetime.datetime.now()
+        self.updated_at = updated_at or datetime.datetime.now()
+        self.initially_published_at = initial_published_at
+        self.version_published_at = version_published_at
         self.game_id = game_id
         self.name = name
+        self.status = status
+        self.visible = visible
+        self.nsfw = nsfw
         self.description = description
         self.url = url
         self.thumb_url = thumb_url
-        self.latest_version = latest_version
-        self.devlog = devlog
+        self.version = version
         self.tags = tags
-        self.languages = languages
         self.rating = rating
         self.rating_count = rating_count
-        self.status = status
+        self.devlog = devlog
+        self.languages = languages
         self.platform_windows = platform_windows
         self.platform_linux = platform_linux
         self.platform_mac = platform_mac
@@ -106,10 +113,6 @@ class Game(Base):
         self.stats_options = stats_options
         self.stats_words = stats_words
         self.game_engine = game_engine
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.hidden = hidden
-        self.nsfw = nsfw
 
     def to_dict(self):
         return {
@@ -120,7 +123,7 @@ class Game(Base):
             'description': self.description,
             'url': self.url,
             'thumb_url': self.thumb_url,
-            'latest_version': self.latest_version,
+            'version': self.version,
             'devlog': self.devlog,
             'tags': self.tags,
             'languages': self.languages,
@@ -206,9 +209,9 @@ class Game(Base):
 
             game = json.loads(response.text)
             if 'game' in game:
-                self.created_at = int(datetime.datetime.fromisoformat(
+                self.created_at = datetime.datetime.fromisoformat(
                     game['game']['published_at']
-                ).timestamp())
+                )
                 self.thumb_url = game['game']['cover_url']
 
     @backoff.on_exception(backoff.expo,
@@ -238,19 +241,18 @@ class Game(Base):
                 linux_upload = None
                 windows_upload = None
                 android_upload = None
-                linux_upload_timestamp = 0
-                windows_upload_timestamp = 0
-                android_upload_timestamp = 0
+                linux_upload_timestamp = None
+                windows_upload_timestamp = None
+                android_upload_timestamp = None
                 for upload in uploads['uploads']:
                     updated_at = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                    updated_at_timestamp = int(datetime.datetime.timestamp(updated_at))
 
                     # For games that have no traits, check for a zip and assume Windows
                     if windows_upload is None and 'filename' in upload and upload['filename'].endswith('.zip'):
                         self.platform_windows = True
                         if windows_upload is None:
                             windows_upload = upload
-                            windows_upload_timestamp = updated_at_timestamp
+                            windows_upload_timestamp = updated_at
                     if upload['type'] == 'html':
                         self.platform_web = True
                     if upload['traits']:
@@ -258,31 +260,31 @@ class Game(Base):
                             self.platform_windows = True
                             if windows_upload is None:
                                 windows_upload = upload
-                                windows_upload_timestamp = updated_at_timestamp
+                                windows_upload_timestamp = updated_at
                         if 'p_linux' in upload['traits']:
                             self.platform_linux = True
                             if linux_upload is None:
                                 linux_upload = upload
-                                linux_upload_timestamp = updated_at_timestamp
+                                linux_upload_timestamp = updated_at
                         if 'p_osx' in upload['traits']:
                             self.platform_mac = True
                         if 'p_android' in upload['traits']:
                             self.platform_android = True
                             if android_upload is None:
                                 android_upload = upload
-                                android_upload_timestamp = updated_at_timestamp
+                                android_upload_timestamp = updated_at
                 # Force update check by setting latest_timestamp to 0
                 if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
                     latest_timestamp = 0
                 else:
-                    latest_timestamp = self.updated_at or 0
-                latest_version = self.latest_version or 'unknown'
+                    latest_timestamp = self.version_published_at or 0
+                latest_version = self.version or 'unknown'
                 parsed_stats = False
                 for upload in [linux_upload, windows_upload, android_upload]:
                     if parsed_stats == True or upload is None:
                         continue
                     element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                    timestamp = int(datetime.datetime.timestamp(element))
+                    timestamp = element
                     # Take the newest timestamp from the uploads
                     if latest_timestamp < timestamp:
                         latest_timestamp = timestamp
@@ -310,19 +312,20 @@ class Game(Base):
                                     parsed_stats = True
                                     break
                 max_timestamp = max(latest_timestamp, windows_upload_timestamp, linux_upload_timestamp, android_upload_timestamp)
-                if self.updated_at != max_timestamp and (self.latest_version != latest_version or latest_version == 'unknown'):
+                if self.version_published_at != max_timestamp and (self.version != latest_version or latest_version == 'unknown'):
                     with Session() as session:
-                        self.latest_version = latest_version
-                        self.updated_at = max_timestamp
+                        self.version = latest_version
+                        self.version_published_at = max_timestamp
                         # Update the game's info & devlog link
                         time.sleep(10)
                         self.refresh_tags_and_rating()
                         # Add the new version to the database
-                        game_version = GameVersion(self.id, self.latest_version, self.devlog, self.platform_windows,
+                        game_version = GameVersion(self.id, self.version, self.devlog, self.platform_windows,
                                                    self.platform_linux, self.platform_mac, self.platform_android,
                                                    self.platform_web, self.stats_blocks, self.stats_menus,
-                                                   self.stats_options, self.stats_words, int(time.time()),
-                                                   self.updated_at, self.rating, self.rating_count)
+                                                   self.stats_options, self.stats_words, datetime.datetime.now(),
+                                                   datetime.datetime.now(), self.version_published_at, self.rating,
+                                                   self.rating_count)
                         session.add(game_version)
                         session.commit()
 
@@ -424,7 +427,7 @@ class Game(Base):
 class GameVersion(Base):
     __tablename__ = 'game_versions'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, (Identity()), primary_key=True)
     game_id = Column(Integer, nullable=False)
     version = Column(String(20))
     devlog = Column(String(250))
@@ -437,14 +440,15 @@ class GameVersion(Base):
     stats_menus = Column(Integer, nullable=False, default=0)
     stats_options = Column(Integer, nullable=False, default=0)
     stats_words = Column(Integer, nullable=False, default=0)
-    created_at = Column(Integer, nullable=False)
-    released_at = Column(Integer, nullable=False)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    published_at = Column(DateTime, nullable=False)
     rating = Column(Float)
     rating_count = Column(Integer)
 
     def __init__(self, game_id, version, devlog, platform_windows, platform_linux, platform_mac, platform_android,
-                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, released_at,
-                 rating, rating_count):
+                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, updated_at,
+                 published_at, rating, rating_count):
         self.game_id = game_id
         self.version = version
         self.devlog = devlog
@@ -457,8 +461,9 @@ class GameVersion(Base):
         self.stats_menus = stats_menus
         self.stats_options = stats_options
         self.stats_words = stats_words
-        self.created_at = created_at
-        self.released_at = released_at
+        self.created_at = created_at or datetime.datetime.now()
+        self.updated_at = updated_at or datetime.datetime.now()
+        self.published_at = published_at
         self.rating = rating
         self.rating_count = rating_count
 
@@ -478,78 +483,81 @@ class GameVersion(Base):
             'stats_options': self.stats_options,
             'stats_words': self.stats_words,
             'created_at': self.created_at,
-            'released_at': self.released_at,
+            'updated_at': self.updated_at,
+            'published_at': self.published_at,
             'rating': self.rating,
             'rating_count': self.rating_count
         }
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = 'discord_users'
 
     id = Column(Integer, primary_key=True)
     discord_id = Column(String(100), nullable=False)
-    processed_at = Column(Integer, nullable=False)
+    processed_at = Column(DateTime, nullable=False)
 
     def __init__(self, discord_id, processed_at):
         self.discord_id = discord_id
         self.processed_at = processed_at
 
 
-class Reviewer(Base):
-    __tablename__ = 'reviewers'
+class Rater(Base):
+    __tablename__ = 'raters'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, (Identity()), primary_key=True)
     user_id = Column(Integer, nullable=False)
-    user_name = Column(String(100), nullable=False)
-    created_at = Column(Integer, nullable=False)
-    updated_at = Column(Integer, nullable=False)
-    reviews = relationship("Review", back_populates="reviewer")
+    name = Column(String(100), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    ratings = relationship("Rating", back_populates="rater")
 
-    def __init__(self, user_id, user_name, created_at=0, updated_at=0):
+    def __init__(self, user_id, name, created_at=0, updated_at=0):
         self.user_id = user_id
-        self.user_name = user_name
-        self.created_at = created_at
-        self.updated_at = updated_at
+        self.name = name
+        self.created_at = created_at or datetime.datetime.now()
+        self.updated_at = updated_at or datetime.datetime.now()
 
     def to_dict(self):
         return {
             'user_id': self.user_id,
-            'user_name': self.user_name
+            'name': self.name
         }
 
 
-class Review(Base):
-    __tablename__ = 'reviews'
+class Rating(Base):
+    __tablename__ = 'ratings'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, (Identity()), primary_key=True)
     event_id = Column(Integer, nullable=False)
-    created_at = Column(Integer, nullable=False)
-    updated_at = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    published_at = Column(DateTime, nullable=False)
     game_id = Column(Integer, ForeignKey('games.id'))
-    reviewer_id = Column(Integer, ForeignKey('reviewers.id'))
+    rater_id = Column(Integer, ForeignKey('raters.id'))
     rating = Column(Integer, nullable=False)
     review = Column(Text)
-    hidden = Column(BOOLEAN, default=False)
-    game = relationship("Game", back_populates="reviews")
-    reviewer = relationship("Reviewer", back_populates="reviews")
+    visible = Column(BOOLEAN, default=False)
     has_review = Column(BOOLEAN, nullable=False, default=False)
+    game = relationship("Game", back_populates="ratings")
+    rater = relationship("Rater", back_populates="ratings")
 
-    def __init__(self, event_id, created_at, updated_at, game_id, reviewer_id, rating, review, hidden=False):
+    def __init__(self, event_id, created_at, updated_at, published_at, game_id, rater_id, rating, review, visible=True):
         self.event_id = event_id
-        self.created_at = created_at
-        self.updated_at = updated_at
+        self.created_at = created_at or datetime.datetime.now()
+        self.updated_at = updated_at or datetime.datetime.now()
+        self.published_at = published_at
         self.game_id = game_id
-        self.reviewer_id = reviewer_id
+        self.rater_id = rater_id
         self.rating = rating
         self.review = review
-        self.hidden = hidden
+        self.visible = visible
         self.has_review = (review != '')
 
     def to_dict(self):
         return {
             'event_id': self.event_id,
             'updated_at': self.updated_at,
-            'reviewer_id': self.reviewer_id,
+            'rater_id': self.rater_id,
             'game_id': self.game_id,
             'rating': self.rating,
             'review': self.review
@@ -589,17 +597,17 @@ class Review(Base):
         # Get the newest timestamp
         end_event_id = None
         with Session() as session:
-            newest_review = session.query(Review).order_by(Review.event_id.desc()).first()
+            newest_review = session.query(Rating).order_by(Rating.event_id.desc()).first()
             if newest_review:
                 end_event_id = newest_review.event_id
 
         start_event_id = None
 
-        request_session = Review.get_request_session()
+        request_session = Rating.get_request_session()
 
         while True:
             print("\n[reviews] Loop start: " + str(start_event_id) + "\n")
-            start_event_id = Review.import_reviews(request_session, start_event_id)
+            start_event_id = Rating.import_reviews(request_session, start_event_id)
             if start_event_id is None or start_event_id < end_event_id:
                 print("\n[reviews] Import finished: ", str(start_event_id), " ", str(end_event_id), "\n")
                 break
@@ -633,9 +641,9 @@ class Review(Base):
                     user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
                     event_time = review.find("a", {"class": "event_time"}, href=True)
                     event_id = int(event_time['href'].split('/')[-1])
-                    updated_at = int(datetime.datetime.fromisoformat(
+                    updated_at = datetime.datetime.fromisoformat(
                         event_time['title'] + '+00:00'
-                    ).timestamp())
+                    )
                     game_info = review.find("a", {"class": "object_title"}, href=True)
                     game_name = game_info.text
                     game_url = game_info['href']
@@ -643,28 +651,28 @@ class Review(Base):
                     if game_cell:
                         itch_game_id = int(game_cell['data-game_id'])
                     else:
-                        itch_game_id = int(Review.get_game_id(game_url))
+                        itch_game_id = int(Rating.get_game_id(game_url))
                     rating = len(review.find_all("span", {"class": "icon-star"}))
                     rating_blurb = review.find("div", {"class": "rating_blurb"})
                     review_text = ''
                     if rating_blurb:
                         review_text = rating_blurb
-                    existing_reviewer = session.query(Reviewer).filter_by(user_id=itch_user_id).first()
+                    existing_reviewer = session.query(Rater).filter_by(user_id=itch_user_id).first()
                     if existing_reviewer is None:
-                        new_reviewer = Reviewer(itch_user_id, str(user_name), updated_at, updated_at)
+                        new_reviewer = Rater(itch_user_id, str(user_name), updated_at, updated_at)
                         session.add(new_reviewer)
                         session.commit()
                         session.flush()
                         reviewer_id = new_reviewer.id
-                    elif user_name != existing_reviewer.user_name:
-                        existing_reviewer.user_name = user_name
+                    elif user_name != existing_reviewer.name:
+                        existing_reviewer.name = user_name
                         existing_reviewer.updated_at = updated_at
                         session.commit()
                     if existing_reviewer is not None:
                         reviewer_id = existing_reviewer.id
                     existing_game = session.query(Game).filter_by(game_id=itch_game_id).first()
                     if existing_game is None:
-                        new_game = Game('itch', itch_game_id, str(game_name), '', game_url, '', hidden=True)
+                        new_game = Game(game_id=itch_game_id, name=str(game_name), url=game_url, visible=False)
                         session.add(new_game)
                         session.commit()
                         session.flush()
@@ -675,12 +683,12 @@ class Review(Base):
                         session.commit()
                     if existing_game is not None:
                         game_id = existing_game.id
-                    existing_review = session.query(Review).filter_by(event_id=event_id).first()
+                    existing_review = session.query(Rating).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Review(event_id, updated_at, updated_at, game_id, reviewer_id, rating, str(review_text))
-                        session.query(Review). \
-                            filter(Review.game_id == new_review.game_id, Review.reviewer_id == new_review.reviewer_id). \
-                            update({'hidden': True})
+                        new_review = Rating(event_id, updated_at, updated_at, updated_at, game_id, reviewer_id, rating, str(review_text))
+                        session.query(Rating). \
+                            filter(Rating.game_id == new_review.game_id, Rating.rater_id == new_review.rater_id). \
+                            update({'visible': False})
                         session.commit()
                         session.add(new_review)
                         session.commit()
