@@ -106,18 +106,24 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
             if matches:
                 await ctx.respond(f'Refreshing {matches} matches for "{name}"')
                 for game in games:
-                    if refresh_base_info:
-                        game.refresh_base_info(ITCH_API_KEY)
+                    try:
+                        game.error = None
+                        if refresh_base_info:
+                            game.refresh_base_info(ITCH_API_KEY)
+                            session.commit()
+                            time.sleep(10)
+                        if refresh_tags:
+                            game.refresh_tags_and_rating()
+                            session.commit()
+                            time.sleep(10)
+                        if refresh_version:
+                            game.refresh_version(ITCH_API_KEY, force)
+                            session.commit()
+                            time.sleep(10)
+                    except Exception as exception:
+                        print("\n[Update Error] ", exception, "\n")
+                        game.error = exception
                         session.commit()
-                        time.sleep(10)
-                    if refresh_tags:
-                        game.refresh_tags_and_rating()
-                        session.commit()
-                        time.sleep(10)
-                    if refresh_version:
-                        game.refresh_version(ITCH_API_KEY, force)
-                        session.commit()
-                        time.sleep(10)
             else:
                 await ctx.respond(f'Found no matches for "{name}"')
     else:
