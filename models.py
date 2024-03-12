@@ -241,9 +241,9 @@ class Game(Base):
                 linux_upload = None
                 windows_upload = None
                 android_upload = None
-                linux_upload_timestamp = None
-                windows_upload_timestamp = None
-                android_upload_timestamp = None
+                linux_upload_timestamp = datetime.datetime.min
+                windows_upload_timestamp = datetime.datetime.min
+                android_upload_timestamp = datetime.datetime.min
                 for upload in uploads['uploads']:
                     updated_at = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
 
@@ -275,9 +275,9 @@ class Game(Base):
                                 android_upload_timestamp = updated_at
                 # Force update check by setting latest_timestamp to 0
                 if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
-                    latest_timestamp = 0
+                    latest_timestamp = datetime.datetime.min
                 else:
-                    latest_timestamp = self.version_published_at or 0
+                    latest_timestamp = self.version_published_at or datetime.datetime.min
                 latest_version = self.version or 'unknown'
                 parsed_stats = False
                 for upload in [linux_upload, windows_upload, android_upload]:
