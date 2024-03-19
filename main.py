@@ -50,11 +50,11 @@ async def notify_about_updates():
             if game_versions:
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
                 if user.discord_id == DISCORD_ADMIN_ID:
+                    print("\n[notify_about_updates] Is admin user\n")
                     discord_channel = bot.get_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID) \
                         or await bot.fetch_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID)
                 else:
                     discord_channel = None
-                await discord_channel.send('hello')
                 result = f'Found {len(game_versions)} new updates:\n'
                 for game, game_version in game_versions:
                     result += f'{game.name}, Latest Version: {game_version.version}, ' \
