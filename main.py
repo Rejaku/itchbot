@@ -8,6 +8,8 @@ from models import engine, Session, Base, Game, User, GameVersion
 from scheduler import Scheduler
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
+DISCORD_ADMIN_ID = int(os.environ['DISCORD_ADMIN_ID'])
+DISCORD_NOTIFICATIONS_CHANNEL_ID = int(os.environ['DISCORD_NOTIFICATIONS_CHANNEL_ID'])
 ITCH_API_KEY = os.environ['ITCH_API_KEY']
 ITCH_COLLECTION_ID = os.environ['ITCH_COLLECTION_ID']
 
@@ -47,15 +49,25 @@ async def notify_about_updates():
             ).all()
             if game_versions:
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
+                if user.discord_id == DISCORD_ADMIN_ID:
+                    discord_channel = bot.get_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID) \
+                        or await bot.fetch_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID)
+                else:
+                    discord_channel = None
+                await discord_channel.send('hello')
                 result = f'Found {len(game_versions)} new updates:\n'
                 for game, game_version in game_versions:
                     result += f'{game.name}, Latest Version: {game_version.version}, ' \
                               f'Last Updated At: <t:{int(datetime.datetime.timestamp(game_version.published_at))}:f> <{game.url}> | <{game_version.devlog}>\n'
                     if len(result) > 1600:
                         await discord_user.send(result)
+                        if discord_channel:
+                            await discord_channel.send(result)
                         result = ''
                 if result:
                     await discord_user.send(result)
+                    if discord_channel:
+                        await discord_channel.send(result)
                 user.processed_at = start_time
                 session.commit()
 
@@ -92,6 +104,10 @@ async def unsubscribe(ctx):
 
 @bot.slash_command(name="refresh")
 async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bool = False, refresh_tags: bool = False, force: bool = False):
+    if ctx.author.id != DISCORD_ADMIN_ID:
+        await ctx.respond('You\'re not authorized to use this command')
+        return
+
     if name:
         with Session() as session:
             if force:
