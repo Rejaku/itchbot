@@ -49,7 +49,7 @@ async def notify_about_updates():
             ).all()
             if game_versions:
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
-                if user.discord_id == DISCORD_ADMIN_ID:
+                if int(user.discord_id) == int(DISCORD_ADMIN_ID):
                     print("\n[notify_about_updates] Is admin user\n")
                     discord_channel = bot.get_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID)) \
                         or await bot.fetch_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID))
@@ -104,7 +104,7 @@ async def unsubscribe(ctx):
 
 @bot.slash_command(name="refresh")
 async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bool = False, refresh_tags: bool = False, force: bool = False):
-    if ctx.author.id != DISCORD_ADMIN_ID:
+    if int(ctx.author.id) != int(DISCORD_ADMIN_ID):
         await ctx.respond('You\'re not authorized to use this command')
         return
 
