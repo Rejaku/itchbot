@@ -8,8 +8,8 @@ from models import engine, Session, Base, Game, User, GameVersion
 from scheduler import Scheduler
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
-DISCORD_ADMIN_ID = int(os.environ['DISCORD_ADMIN_ID'])
-DISCORD_NOTIFICATIONS_CHANNEL_ID = int(os.environ['DISCORD_NOTIFICATIONS_CHANNEL_ID'])
+DISCORD_ADMIN_ID = os.environ['DISCORD_ADMIN_ID']
+DISCORD_NOTIFICATIONS_CHANNEL_ID = os.environ['DISCORD_NOTIFICATIONS_CHANNEL_ID']
 ITCH_API_KEY = os.environ['ITCH_API_KEY']
 ITCH_COLLECTION_ID = os.environ['ITCH_COLLECTION_ID']
 
@@ -51,8 +51,8 @@ async def notify_about_updates():
                 discord_user = bot.get_user(user.discord_id) or await bot.fetch_user(user.discord_id)
                 if user.discord_id == DISCORD_ADMIN_ID:
                     print("\n[notify_about_updates] Is admin user\n")
-                    discord_channel = bot.get_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID) \
-                        or await bot.fetch_channel(DISCORD_NOTIFICATIONS_CHANNEL_ID)
+                    discord_channel = bot.get_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID)) \
+                        or await bot.fetch_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID))
                 else:
                     discord_channel = None
                 result = f'Found {len(game_versions)} new updates:\n'
