@@ -78,6 +78,7 @@ class Game(Base):
     stats_words = Column(Integer, nullable=False, default=0)
     game_engine = Column(String(50))
     error = Column(Text)
+    authors = Column(Text)
     ratings = relationship("Rating", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initial_published_at=None, version_published_at=None, game_id=None, name=None,
@@ -182,8 +183,14 @@ class Game(Base):
             for tr in info_table.findAll('tr'):
                 if tr.text.find('Languages') > -1:
                     self.languages = tr.text.strip()[9:]
-                if tr.text.find('Tags') > -1:
+                elif tr.text.find('Tags') > -1:
                     self.tags = tr.text.strip()[4:]
+                elif tr.text.find('Author') > -1:
+                    self.authors = ''
+                    for author in tr.findAll("a", href=True):
+                        if self.authors != '':
+                            self.authors += ',<br>'
+                        self.authors += f'<a href="{author["href"]}" target="_blank">{author.text}</a>'
             nsfw = soup.find("div", {"class": "content_warning_inner"})
             if nsfw:
                 self.nsfw = True
@@ -506,14 +513,16 @@ class Rater(Base):
 
     id = Column(BigInteger, (Identity()), primary_key=True)
     user_id = Column(Integer, nullable=False)
-    name = Column(String(100), nullable=False)
+    name = Column(Text(), nullable=False)
+    username = Column(Text())
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     ratings = relationship("Rating", back_populates="rater")
 
-    def __init__(self, user_id, name, created_at=0, updated_at=0):
+    def __init__(self, user_id, name, username=None, created_at=None, updated_at=None):
         self.user_id = user_id
         self.name = name
+        self.username = username
         self.created_at = created_at or datetime.datetime.now()
         self.updated_at = updated_at or datetime.datetime.now()
 
@@ -639,6 +648,7 @@ class Rating(Base):
                     script = review.find("script", {"type": "text/javascript"})
                     itch_user_id = re.findall(r"user_id.*:(\d+)", script.text).pop(0)
                     user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
+                    user_username = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True)['href'].split('/')[-1].split('.')[0]
                     event_time = review.find("a", {"class": "event_time"}, href=True)
                     event_id = int(event_time['href'].split('/')[-1])
                     updated_at = datetime.datetime.fromisoformat(
@@ -659,13 +669,17 @@ class Rating(Base):
                         review_text = rating_blurb
                     existing_reviewer = session.query(Rater).filter_by(user_id=itch_user_id).first()
                     if existing_reviewer is None:
-                        new_reviewer = Rater(itch_user_id, str(user_name), updated_at, updated_at)
+                        new_reviewer = Rater(itch_user_id, str(user_name), str(user_username), updated_at, updated_at)
                         session.add(new_reviewer)
                         session.commit()
                         session.flush()
                         reviewer_id = new_reviewer.id
                     elif user_name != existing_reviewer.name:
                         existing_reviewer.name = user_name
+                        existing_reviewer.updated_at = updated_at
+                        session.commit()
+                    elif user_username != existing_reviewer.username:
+                        existing_reviewer.username = user_username
                         existing_reviewer.updated_at = updated_at
                         session.commit()
                     if existing_reviewer is not None:
