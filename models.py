@@ -187,8 +187,7 @@ class Game(Base):
                     self.tags = tr.text.strip()[4:]
                 elif tr.text.find('Author') > -1:
                     self.authors = ''
-                    authors = tr.findAll("a", href=True)
-                    for author in sorted(authors, key=lambda author: author.text):
+                    for author in tr.findAll("a", href=True):
                         if self.authors != '':
                             self.authors += ',<br>'
                         self.authors += f'<a href="{author["href"]}" target="_blank">{author.text}</a>'
