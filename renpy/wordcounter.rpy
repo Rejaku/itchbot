@@ -42,7 +42,7 @@ init -10000 python:
 
         for node in all_stmts:
             if isinstance(node, renpy.ast.Say):
-                if isinstance(node, renpy.ast.TranslateSay):
+                if hasattr(renpy.ast, 'TranslateSay') and isinstance(node, renpy.ast.TranslateSay):
                     language = node.language
 
                 if language is None:
