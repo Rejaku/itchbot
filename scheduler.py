@@ -90,12 +90,11 @@ class Scheduler:
                             game.name = collection_entry['game'].get('title')
                             game.description = collection_entry['game'].get('short_text')
                             game.thumb_url = collection_entry['game'].get('cover_url')
-                            session.commit()
                         if game.created_at == 0:
                             game.created_at = datetime.datetime.fromisoformat(
                                 collection_entry['game']['published_at']
                             )
-                            session.commit()
+                        session.commit()
                     else:
                         game = Game(
                             game_id=collection_entry['game']['id'],
