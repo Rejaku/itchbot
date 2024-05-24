@@ -86,8 +86,8 @@ class Game(Base):
                  tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
                  platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown'):
-        self.created_at = created_at or datetime.datetime.now()
-        self.updated_at = updated_at or datetime.datetime.now()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initial_published_at
         self.version_published_at = version_published_at
         self.game_id = game_id
@@ -330,8 +330,8 @@ class Game(Base):
                         game_version = GameVersion(self.id, self.version, self.devlog, self.platform_windows,
                                                    self.platform_linux, self.platform_mac, self.platform_android,
                                                    self.platform_web, self.stats_blocks, self.stats_menus,
-                                                   self.stats_options, self.stats_words, datetime.datetime.now(),
-                                                   datetime.datetime.now(), self.version_published_at, self.rating,
+                                                   self.stats_options, self.stats_words, datetime.datetime.utcnow(),
+                                                   datetime.datetime.utcnow(), self.version_published_at, self.rating,
                                                    self.rating_count)
                         session.add(game_version)
                         session.commit()
@@ -468,8 +468,8 @@ class GameVersion(Base):
         self.stats_menus = stats_menus
         self.stats_options = stats_options
         self.stats_words = stats_words
-        self.created_at = created_at or datetime.datetime.now()
-        self.updated_at = updated_at or datetime.datetime.now()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
         self.published_at = published_at
         self.rating = rating
         self.rating_count = rating_count
@@ -523,8 +523,8 @@ class Rater(Base):
         self.user_id = user_id
         self.name = name
         self.username = username
-        self.created_at = created_at or datetime.datetime.now()
-        self.updated_at = updated_at or datetime.datetime.now()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
 
     def to_dict(self):
         return {
@@ -552,8 +552,8 @@ class Rating(Base):
 
     def __init__(self, event_id, created_at, updated_at, published_at, game_id, rater_id, rating, review, visible=True):
         self.event_id = event_id
-        self.created_at = created_at or datetime.datetime.now()
-        self.updated_at = updated_at or datetime.datetime.now()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
         self.published_at = published_at
         self.game_id = game_id
         self.rater_id = rater_id

@@ -36,7 +36,7 @@ async def notify_about_updates():
         users = session.query(User)
         print("\n[notify_about_updates] User loop\n")
         for user in users:
-            start_time = datetime.datetime.now()
+            start_time = datetime.datetime.utcnow()
             game_versions = session.query(
                 Game, GameVersion
             ).join(
