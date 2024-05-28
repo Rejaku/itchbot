@@ -81,14 +81,14 @@ class Game(Base):
     authors = Column(Text)
     ratings = relationship("Rating", back_populates="game")
 
-    def __init__(self, created_at=None, updated_at=None, initial_published_at=None, version_published_at=None, game_id=None, name=None,
+    def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None, game_id=None, name=None,
                  status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None, version='unknown',
                  tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
                  platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown'):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
-        self.initially_published_at = initial_published_at
+        self.initially_published_at = initially_published_at
         self.version_published_at = version_published_at
         self.game_id = game_id
         self.name = name

@@ -83,30 +83,34 @@ class Scheduler:
                         .first()
                     # Update if already in DB
                     if game:
-                        game.visible = True
+                        if not game.visible:
+                            game.visible = True
+                            game.updated_at = datetime.datetime.utcnow()
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
                                 or collection_entry['game'].get('cover_url') != game.thumb_url:
                             game.name = collection_entry['game'].get('title')
                             game.description = collection_entry['game'].get('short_text')
                             game.thumb_url = collection_entry['game'].get('cover_url')
-                        if game.created_at == 0:
-                            game.created_at = datetime.datetime.fromisoformat(
+                            game.updated_at = datetime.datetime.utcnow()
+                        if game.initially_published_at is None:
+                            game.initially_published_at = datetime.datetime.fromisoformat(
                                 collection_entry['game']['published_at']
                             )
+                            game.updated_at = datetime.datetime.utcnow()
                         session.commit()
                     else:
                         game = Game(
+                            initially_published_at=datetime.datetime.fromisoformat(
+                                collection_entry['game']['published_at']
+                            ),
                             game_id=collection_entry['game']['id'],
                             name=collection_entry['game']['title'],
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
                             version='unknown',
-                            created_at=datetime.datetime.fromisoformat(
-                                collection_entry['game']['published_at']
-                            ),
-                            updated_at=0
+                            visible=True,
                         )
                         session.add(game)
                         session.commit()
