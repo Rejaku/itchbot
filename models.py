@@ -181,16 +181,21 @@ class Game(Base):
                 self.rating_count = rating_count['content']
             info_table = soup.find("div", {"class": "game_info_panel_widget"}).find("table")
             for tr in info_table.findAll('tr'):
-                if tr.text.find('Languages') > -1:
-                    self.languages = tr.text.strip()[9:]
-                elif tr.text.find('Tags') > -1:
-                    self.tags = tr.text.strip()[4:]
-                elif tr.text.find('Author') > -1:
-                    self.authors = ''
-                    for author in tr.findAll("a", href=True):
-                        if self.authors != '':
-                            self.authors += ',<br>'
-                        self.authors += f'<a href="{author["href"]}" target="_blank">{author.text}</a>'
+                tds = tr.findAll('td')
+                if len(tds) < 2:
+                    continue
+
+                match tds[0].text:
+                    case 'Languages':
+                        self.languages = tds[1].text.strip()
+                    case 'Tags':
+                        self.tags = tds[1].text.strip()
+                    case ['Author', 'Authors']:
+                        self.authors = ''
+                        for author in tds[1].findAll("a", href=True):
+                            if self.authors != '':
+                                self.authors += ',<br>'
+                            self.authors += f'<a href="{author["href"]}" target="_blank">{author.text}</a>'
             nsfw = soup.find("div", {"class": "content_warning_inner"})
             if nsfw:
                 self.nsfw = True
