@@ -190,7 +190,7 @@ class Game(Base):
                         self.languages = tds[1].text.strip()
                     case 'Tags':
                         self.tags = tds[1].text.strip()
-                    case ['Author', 'Authors']:
+                    case 'Author' | 'Authors':
                         self.authors = ''
                         for author in tds[1].findAll("a", href=True):
                             if self.authors != '':
