@@ -264,7 +264,7 @@ class Game(Base):
             self.platform_android = False
             self.platform_web = False
 
-            for upload in uploads['uploads']:
+            for upload in uploads_data['uploads']:
                 file_id = str(upload['id'])
                 current_md5 = upload.get('md5_hash', '')
                 current_updated_at = upload['updated_at']
