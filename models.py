@@ -301,7 +301,7 @@ class Game(Base):
                     elif current_filename.lower().endswith('.zip') and not new_linux_upload and not new_windows_upload:
                         new_zip_upload = upload
 
-            self.uploads = seen_uploads
+            self.uploads = json.dumps(seen_uploads)
 
             if not has_changes and not force:
                 return
