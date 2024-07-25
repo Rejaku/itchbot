@@ -18,6 +18,7 @@ from requests_html import HTMLSession
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
     Identity
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy_json import mutable_json_type
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from bs4 import BeautifulSoup
 from shlex import quote
@@ -80,7 +81,7 @@ class Game(Base):
     game_engine = Column(String(50))
     error = Column(Text)
     authors = Column(Text)
-    uploads = Column(JSONB, default={})
+    uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     ratings = relationship("Rating", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None, game_id=None, name=None,

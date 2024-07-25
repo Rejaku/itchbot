@@ -12,6 +12,7 @@ requests-html
 schedule
 sqlalchemy
 sqlalchemy2-stubs
+sqlalchemy-json
 types-beautifulsoup4
 types-waitress
 waitress
