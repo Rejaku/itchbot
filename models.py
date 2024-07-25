@@ -17,6 +17,7 @@ from requests import RequestException
 from requests_html import HTMLSession
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
     Identity
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from bs4 import BeautifulSoup
 from shlex import quote
@@ -79,14 +80,14 @@ class Game(Base):
     game_engine = Column(String(50))
     error = Column(Text)
     authors = Column(Text)
-    uploads = Column(Text, default='{}')
+    uploads = Column(JSONB, default={})
     ratings = relationship("Rating", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None, game_id=None, name=None,
                  status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None, version='unknown',
                  tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
                  platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
-                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown', uploads='{}'):
+                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown', uploads=None):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initially_published_at
@@ -115,7 +116,7 @@ class Game(Base):
         self.stats_options = stats_options
         self.stats_words = stats_words
         self.game_engine = game_engine
-        self.uploads = uploads
+        self.uploads = uploads or {}
 
     def to_dict(self):
         return {
@@ -301,7 +302,7 @@ class Game(Base):
                     elif current_filename.lower().endswith('.zip') and not new_linux_upload and not new_windows_upload:
                         new_zip_upload = upload
 
-            self.uploads = json.dumps(seen_uploads)
+            self.uploads = seen_uploads
 
             if not has_changes and not force:
                 return
