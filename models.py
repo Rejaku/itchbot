@@ -301,7 +301,7 @@ class Game(Base):
                     elif current_filename.lower().endswith('.zip') and not new_linux_upload and not new_windows_upload:
                         new_zip_upload = upload
 
-            self.uploads = json.dumps(seen_uploads)
+            self.uploads = seen_uploads
 
             if not has_changes and not force:
                 return
@@ -316,7 +316,6 @@ class Game(Base):
                     with Session() as session:
                         self.version = new_version
                         self.version_published_at = upload_timestamp
-                        self.uploads = json.dumps(seen_uploads)
 
                         # Get script stats for the selected upload
                         self.get_script_stats(itch_api_key, upload_to_process)
