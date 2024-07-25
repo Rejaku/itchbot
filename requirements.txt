@@ -3,6 +3,7 @@ backoff
 bs4
 flake8
 Flask
+lxml_html_clean
 mypy
 psycopg2
 py-cord
