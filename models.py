@@ -79,13 +79,14 @@ class Game(Base):
     game_engine = Column(String(50))
     error = Column(Text)
     authors = Column(Text)
+    uploads = Column(Text, default='{}')
     ratings = relationship("Rating", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None, game_id=None, name=None,
                  status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None, version='unknown',
                  tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
                  platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
-                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown'):
+                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown', uploads='{}'):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initially_published_at
@@ -114,6 +115,7 @@ class Game(Base):
         self.stats_options = stats_options
         self.stats_words = stats_words
         self.game_engine = game_engine
+        self.uploads = uploads
 
     def to_dict(self):
         return {
@@ -143,7 +145,8 @@ class Game(Base):
             'game_engine': self.game_engine,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
-            'nsfw': self.nsfw
+            'nsfw': self.nsfw,
+            'uploads': self.uploads
         }
 
     @backoff.on_exception(backoff.expo,
@@ -243,103 +246,109 @@ class Game(Base):
                 print("\n[refresh_version] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
-            uploads = json.loads(response.text)
-            if 'uploads' in uploads:
-                self.platform_windows = False
-                self.platform_linux = False
-                self.platform_mac = False
-                self.platform_android = False
-                self.platform_web = False
-                linux_upload = None
-                windows_upload = None
-                android_upload = None
-                linux_upload_timestamp = datetime.datetime.min
-                windows_upload_timestamp = datetime.datetime.min
-                android_upload_timestamp = datetime.datetime.min
-                for upload in uploads['uploads']:
-                    updated_at = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
+            seen_uploads = json.loads(self.uploads or '{}')
+            uploads_data = json.loads(response.text)
 
-                    # For games that have no traits, check for a zip and assume Windows
-                    if windows_upload is None and 'filename' in upload and upload['filename'].endswith('.zip'):
+            if 'uploads' not in uploads_data:
+                print("\n[refresh_version] No uploads found in response\n")
+                return
+
+            has_changes = False
+            new_linux_upload = None
+            new_windows_upload = None
+            new_zip_upload = None
+
+            self.platform_windows = False
+            self.platform_linux = False
+            self.platform_mac = False
+            self.platform_android = False
+            self.platform_web = False
+
+            for upload in uploads['uploads']:
+                file_id = str(upload['id'])
+                current_md5 = upload.get('md5_hash', '')
+                current_updated_at = upload['updated_at']
+                current_created_at = upload['created_at']
+                current_filename = upload['filename']
+
+                if 'traits' in upload:
+                    if 'p_windows' in upload['traits']:
                         self.platform_windows = True
-                        if windows_upload is None:
-                            windows_upload = upload
-                            windows_upload_timestamp = updated_at
-                    if upload['type'] == 'html':
-                        self.platform_web = True
-                    if upload['traits']:
-                        if 'p_windows' in upload['traits']:
-                            self.platform_windows = True
-                            if windows_upload is None:
-                                windows_upload = upload
-                                windows_upload_timestamp = updated_at
-                        if 'p_linux' in upload['traits']:
-                            self.platform_linux = True
-                            if linux_upload is None:
-                                linux_upload = upload
-                                linux_upload_timestamp = updated_at
-                        if 'p_osx' in upload['traits']:
-                            self.platform_mac = True
-                        if 'p_android' in upload['traits']:
-                            self.platform_android = True
-                            if android_upload is None:
-                                android_upload = upload
-                                android_upload_timestamp = updated_at
-                # Force update check by setting latest_timestamp to 0
-                if force and (linux_upload is not None or windows_upload is not None or android_upload is not None):
-                    latest_timestamp = datetime.datetime.min
-                else:
-                    latest_timestamp = self.version_published_at or datetime.datetime.min
-                latest_version = self.version or 'unknown'
-                parsed_stats = False
-                for upload in [linux_upload, windows_upload, android_upload]:
-                    if parsed_stats == True or upload is None:
-                        continue
-                    element = datetime.datetime.strptime(upload['updated_at'], "%Y-%m-%dT%H:%M:%S.%f000Z")
-                    timestamp = element
-                    # Take the newest timestamp from the uploads
-                    if latest_timestamp < timestamp:
-                        latest_timestamp = timestamp
-                        for version_number_source in ['build.user_version', 'filename', 'display_name']:
-                            if version_number_source == 'build.user_version' and upload.get('build') and upload['build'].get('user_version'):
-                                version = upload['build']['user_version']
-                                if latest_version == version:
-                                    continue
-                                latest_version = version
-                                if upload is linux_upload or (upload is windows_upload and linux_upload is None):
-                                    self.get_script_stats(itch_api_key, upload)
-                                parsed_stats = True
-                                break
-                            elif upload.get(version_number_source):
-                                version_number_string = upload[version_number_source]
-                                # Extract version number from source string, matches anything from 1 to 1.2.3.4...
-                                matches = re.compile(r'\d+(=?\.(\d+(=?\.(\d+)*)*)*)*').search(version_number_string)
-                                if matches:
-                                    version = matches.group(0).rstrip('.')
-                                    if latest_version == version:
-                                        continue
-                                    latest_version = version
-                                    if upload is linux_upload or (upload is windows_upload and linux_upload is None):
-                                        self.get_script_stats(itch_api_key, upload)
-                                    parsed_stats = True
-                                    break
-                max_timestamp = max(latest_timestamp, windows_upload_timestamp, linux_upload_timestamp, android_upload_timestamp)
-                if self.version_published_at != max_timestamp and (self.version != latest_version or latest_version == 'unknown'):
+                    if 'p_linux' in upload['traits']:
+                        self.platform_linux = True
+                    if 'p_osx' in upload['traits']:
+                        self.platform_mac = True
+                    if 'p_android' in upload['traits']:
+                        self.platform_android = True
+                if upload['type'] == 'html':
+                    self.platform_web = True
+
+                if (file_id not in seen_uploads or
+                        seen_uploads[file_id]['md5_hash'] != current_md5 or
+                        seen_uploads[file_id]['updated_at'] != current_updated_at):
+                    has_changes = True
+                    seen_uploads[file_id] = {
+                        'md5_hash': current_md5,
+                        'updated_at': current_updated_at,
+                        'created_at': current_created_at,
+                        'filename': current_filename
+                    }
+
+                    if 'traits' in upload and 'p_linux' in upload['traits']:
+                        new_linux_upload = upload
+                    elif 'traits' in upload and 'p_windows' in upload['traits'] and not new_linux_upload:
+                        new_windows_upload = upload
+                    elif current_filename.lower().endswith('.zip') and not new_linux_upload and not new_windows_upload:
+                        new_zip_upload = upload
+
+            self.uploads = json.dumps(seen_uploads)
+
+            if not has_changes and not force:
+                return
+
+            upload_to_process = new_linux_upload or new_windows_upload or new_zip_upload
+            if upload_to_process:
+                new_version = self.extract_version(upload_to_process)
+                upload_timestamp = datetime.datetime.fromisoformat(
+                    upload_to_process['updated_at'].replace('Z', '+00:00'))
+
+                if self.version != new_version or force:
                     with Session() as session:
-                        self.version = latest_version
-                        self.version_published_at = max_timestamp
+                        self.version = new_version
+                        self.version_published_at = upload_timestamp
+                        self.uploads = json.dumps(seen_uploads)
+
+                        # Get script stats for the selected upload
+                        self.get_script_stats(itch_api_key, upload_to_process)
+
                         # Update the game's info & devlog link
                         time.sleep(10)
                         self.refresh_tags_and_rating()
+
                         # Add the new version to the database
-                        game_version = GameVersion(self.id, self.version, self.devlog, self.platform_windows,
-                                                   self.platform_linux, self.platform_mac, self.platform_android,
-                                                   self.platform_web, self.stats_blocks, self.stats_menus,
-                                                   self.stats_options, self.stats_words, datetime.datetime.utcnow(),
-                                                   datetime.datetime.utcnow(), self.version_published_at, self.rating,
-                                                   self.rating_count)
+                        game_version = GameVersion(
+                            self.id, self.version, self.devlog, self.platform_windows,
+                            self.platform_linux, self.platform_mac, self.platform_android,
+                            self.platform_web, self.stats_blocks, self.stats_menus,
+                            self.stats_options, self.stats_words, datetime.datetime.utcnow(),
+                            datetime.datetime.utcnow(), self.version_published_at, self.rating,
+                            self.rating_count
+                        )
                         session.add(game_version)
                         session.commit()
+
+
+    def extract_version(self, upload):
+        # Try to extract version from filename
+        filename = upload.get('filename', '')
+        version_match = re.search(r'[-_v](\d+(?:\.\d+)*)[-_.]', filename)
+        if version_match:
+            return version_match.group(1)
+
+        # If no version found in filename, use the update timestamp
+        timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
+        return timestamp.strftime("%Y.%m.%d")
+
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
