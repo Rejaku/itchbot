@@ -246,7 +246,7 @@ class Game(Base):
                 print("\n[refresh_version] Status != 200: " + str(response.status_code) + "\n")
                 raise RequestException("Status code not 200, retrying")
 
-            seen_uploads = json.loads(self.uploads or '{}')
+            seen_uploads = self.uploads or {}
             uploads_data = json.loads(response.text)
 
             if 'uploads' not in uploads_data:
