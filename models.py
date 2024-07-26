@@ -84,8 +84,10 @@ class Game(Base):
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     ratings = relationship("Rating", back_populates="game")
 
-    def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None, game_id=None, name=None,
-                 status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None, version='unknown',
+    def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None,
+                 game_id=None, name=None,
+                 status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None,
+                 version='unknown',
                  tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
                  platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
                  stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown', uploads=None):
@@ -320,7 +322,9 @@ class Game(Base):
                 'p_windows' in u.get('traits', []),
                 u['filename'].lower().endswith('.zip'),
                 datetime.datetime.fromisoformat(u['updated_at'].replace('Z', '+00:00')),
-                datetime.datetime.fromisoformat(u['build_updated_at'].replace('Z', '+00:00')),
+                datetime.datetime.fromisoformat(
+                    u.get('build', {}).get('updated_at', '1970-01-01T00:00:00Z').replace('Z', '+00:00')
+                ),
             ), reverse=True)
             upload_to_process = candidate_uploads[0] if candidate_uploads else None
 
@@ -352,7 +356,6 @@ class Game(Base):
                         )
                         session.add(game_version)
                         session.commit()
-
 
     def extract_version(self, upload):
         # Prioritize build.user_version if it exists
@@ -402,7 +405,6 @@ class Game(Base):
         # If no version found, use the update timestamp
         timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
         return timestamp.strftime("%Y.%m.%d")
-
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
@@ -473,10 +475,12 @@ class Game(Base):
                     game_dir_files = directory_listing
                 if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
                     shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
-                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(game_dir + '/lib/py3-linux-x86_64') and not os.path.isdir(game_dir + '/lib/linux-x86_64'):
+                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(
+                            game_dir + '/lib/py3-linux-x86_64') and not os.path.isdir(game_dir + '/lib/linux-x86_64'):
                         shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
                         shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
-                        shutil.copytree('./renpy/py3-linux-x86_64', game_dir + '/lib/py3-linux-x86_64', dirs_exist_ok=True)
+                        shutil.copytree('./renpy/py3-linux-x86_64', game_dir + '/lib/py3-linux-x86_64',
+                                        dirs_exist_ok=True)
                         # Refresh the directory listing
                         game_dir_files = os.listdir(game_dir)
                     for game_dir_file in game_dir_files:
@@ -498,6 +502,7 @@ class Game(Base):
                                 os.remove(download_path)
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
+
 
 class GameVersion(Base):
     __tablename__ = 'game_versions'
@@ -563,6 +568,7 @@ class GameVersion(Base):
             'rating': self.rating,
             'rating_count': self.rating_count
         }
+
 
 class User(Base):
     __tablename__ = 'discord_users'
@@ -697,7 +703,7 @@ class Rating(Base):
                            requests.exceptions.ConnectionError),
                           jitter=None,
                           base=60)
-    def import_reviews(request_session, start_event_id = None):
+    def import_reviews(request_session, start_event_id=None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id
         if start_event_id is not None:
@@ -715,8 +721,11 @@ class Rating(Base):
                 for review in reviews:
                     script = review.find("script", {"type": "text/javascript"})
                     itch_user_id = re.findall(r"user_id.*:(\d+)", script.text).pop(0)
-                    user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True).text
-                    user_username = review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True)['href'].split('/')[-1].split('.')[0]
+                    user_name = review.find("a", {"data-label": "event_user", "class": "event_source_user"},
+                                            href=True).text
+                    user_username = \
+                    review.find("a", {"data-label": "event_user", "class": "event_source_user"}, href=True)[
+                        'href'].split('/')[-1].split('.')[0]
                     event_time = review.find("a", {"class": "event_time"}, href=True)
                     event_id = int(event_time['href'].split('/')[-1])
                     updated_at = datetime.datetime.fromisoformat(
@@ -767,7 +776,8 @@ class Rating(Base):
                         game_id = existing_game.id
                     existing_review = session.query(Rating).filter_by(event_id=event_id).first()
                     if existing_review is None:
-                        new_review = Rating(event_id, updated_at, updated_at, updated_at, game_id, reviewer_id, rating, str(review_text))
+                        new_review = Rating(event_id, updated_at, updated_at, updated_at, game_id, reviewer_id, rating,
+                                            str(review_text))
                         session.query(Rating). \
                             filter(Rating.game_id == new_review.game_id, Rating.rater_id == new_review.rater_id). \
                             update({'visible': False})
