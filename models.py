@@ -256,9 +256,7 @@ class Game(Base):
                 return
 
             has_changes = False
-            new_linux_upload = None
-            new_windows_upload = None
-            new_zip_upload = None
+            candidate_uploads = []
 
             self.platform_windows = False
             self.platform_linux = False
@@ -310,22 +308,21 @@ class Game(Base):
                         'user_version': current_user_version,
                         'filename': current_filename
                     }
-
-                    # Prioritize uploads based on traits and file extension
-                    if 'traits' in upload and 'p_linux' in upload['traits']:
-                        new_linux_upload = upload
-                    elif 'traits' in upload and 'p_windows' in upload['traits'] and not new_linux_upload:
-                        new_windows_upload = upload
-                    elif current_filename.lower().endswith('.zip') and not new_linux_upload and not new_windows_upload:
-                        new_zip_upload = upload
+                    candidate_uploads.append(upload)
 
             self.uploads = seen_uploads
 
             if not has_changes and not force:
                 return
 
-            # Select the upload to process based on priority
-            upload_to_process = new_linux_upload or new_windows_upload or new_zip_upload
+            candidate_uploads.sort(key=lambda u: (
+                'p_linux' in u.get('traits', []),
+                'p_windows' in u.get('traits', []),
+                u['filename'].lower().endswith('.zip'),
+                datetime.datetime.fromisoformat(u['updated_at'].replace('Z', '+00:00')),
+                datetime.datetime.fromisoformat(u['build_updated_at'].replace('Z', '+00:00')),
+            ), reverse=True)
+            upload_to_process = candidate_uploads[0] if candidate_uploads else None
 
             if upload_to_process:
                 new_version = self.extract_version(upload_to_process)
@@ -362,7 +359,7 @@ class Game(Base):
         if 'build' in upload and upload['build'].get('user_version'):
             return upload['build']['user_version']
 
-        version_regex = r'(\d+(?:\.\d+){0,2})'
+        version_regex = r'(\d+(?:\.\d+){0,3})'
 
         # Try to extract version from display_name
         display_name = upload.get('display_name', '')
