@@ -359,21 +359,47 @@ class Game(Base):
         if 'build' in upload and upload['build'].get('user_version'):
             return upload['build']['user_version']
 
-        version_regex = r'(\d+(?:\.\d+){0,3})'
+        version_regex = r'(\d+(?:\.\d+){0,3})'  # Supports up to 4 components
+
+        def score_version(version):
+            # Higher score means more likely to be a proper version number
+            score = 0
+            components = version.split('.')
+
+            # Prefer versions with 2-4 components
+            if 2 <= len(components) <= 4:
+                score += 5
+
+            # Prefer versions where first component is not too large (likely not a date)
+            if components and int(components[0]) < 100:
+                score += 3
+
+            # Prefer versions with smaller numbers (less likely to be a file size or timestamp)
+            score += sum(4 - min(len(comp), 3) for comp in components)
+
+            return score
+
+        # Function to find and score all matches in a string
+        def find_best_match(text):
+            matches = re.finditer(version_regex, text)
+            scored_matches = [(match.group(1), score_version(match.group(1))) for match in matches]
+            return max(scored_matches, key=lambda x: x[1], default=(None, -1))
 
         # Try to extract version from display_name
         display_name = upload.get('display_name', '')
-        version_match = re.search(version_regex, display_name)
-        if version_match:
-            return version_match.group(1)
+        display_name_match, display_name_score = find_best_match(display_name)
 
-        # Fall back to extracting version from filename
+        # Try to extract version from filename
         filename = upload.get('filename', '')
-        version_match = re.search(version_regex, filename)
-        if version_match:
-            return version_match.group(1)
+        filename_match, filename_score = find_best_match(filename)
 
-        # If no version found in filename, use the update timestamp
+        # Choose the best match between display_name and filename
+        if display_name_score > filename_score and display_name_match:
+            return display_name_match
+        elif filename_match:
+            return filename_match
+
+        # If no version found, use the update timestamp
         timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
         return timestamp.strftime("%Y.%m.%d")
 
