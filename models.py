@@ -238,14 +238,14 @@ class Game(Base):
                           jitter=None,
                           base=60)
     def refresh_version(self, itch_api_key, force: bool = False):
-        url = 'https://api.itch.io/games/' + str(self.game_id) + '/uploads'
-        print("\n[refresh_version] URL: " + url + "\n")
+        url = f'https://api.itch.io/games/{self.game_id}/uploads'
+        print(f"\n[refresh_version] URL: {url}\n")
         with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 404:
                 print("\n[refresh_version] Status 404\n")
                 return
             elif response.status_code != 200:
-                print("\n[refresh_version] Status != 200: " + str(response.status_code) + "\n")
+                print(f"\n[refresh_version] Status != 200: {response.status_code}\n")
                 raise RequestException("Status code not 200, retrying")
 
             seen_uploads = self.uploads or {}
@@ -268,11 +268,16 @@ class Game(Base):
 
             for upload in uploads_data['uploads']:
                 file_id = str(upload['id'])
-                current_md5 = upload.get('md5_hash', '')
-                current_updated_at = upload['updated_at']
-                current_created_at = upload['created_at']
                 current_filename = upload['filename']
+                current_display_name = upload.get('display_name')
+                current_md5 = upload.get('md5_hash')
+                current_updated_at = upload['updated_at']
+                current_build_id = upload.get('build_id')
+                current_build = upload.get('build', {})
+                current_user_version = current_build.get('user_version')
+                current_build_updated_at = current_build.get('updated_at')
 
+                # Update platform flags
                 if 'traits' in upload:
                     if 'p_windows' in upload['traits']:
                         self.platform_windows = True
@@ -285,17 +290,28 @@ class Game(Base):
                 if upload['type'] == 'html':
                     self.platform_web = True
 
-                if (file_id not in seen_uploads or
-                        seen_uploads[file_id]['md5_hash'] != current_md5 or
-                        seen_uploads[file_id]['updated_at'] != current_updated_at):
+                # Check if the upload is new or changed
+                is_new_or_changed = (
+                        file_id not in seen_uploads or
+                        seen_uploads[file_id].get('md5_hash') != current_md5 or
+                        seen_uploads[file_id].get('updated_at') != current_updated_at or
+                        seen_uploads[file_id].get('build_id') != current_build_id or
+                        seen_uploads[file_id].get('build_updated_at') != current_build_updated_at
+                )
+
+                if is_new_or_changed:
                     has_changes = True
                     seen_uploads[file_id] = {
+                        'display_name': current_display_name,
                         'md5_hash': current_md5,
                         'updated_at': current_updated_at,
-                        'created_at': current_created_at,
+                        'build_id': current_build_id,
+                        'build_updated_at': current_build_updated_at,
+                        'user_version': current_user_version,
                         'filename': current_filename
                     }
 
+                    # Prioritize uploads based on traits and file extension
                     if 'traits' in upload and 'p_linux' in upload['traits']:
                         new_linux_upload = upload
                     elif 'traits' in upload and 'p_windows' in upload['traits'] and not new_linux_upload:
@@ -308,7 +324,9 @@ class Game(Base):
             if not has_changes and not force:
                 return
 
+            # Select the upload to process based on priority
             upload_to_process = new_linux_upload or new_windows_upload or new_zip_upload
+
             if upload_to_process:
                 new_version = self.extract_version(upload_to_process)
                 upload_timestamp = datetime.datetime.fromisoformat(
@@ -340,9 +358,21 @@ class Game(Base):
 
 
     def extract_version(self, upload):
-        # Try to extract version from filename
+        # Prioritize build.user_version if it exists
+        if 'build' in upload and upload['build'].get('user_version'):
+            return upload['build']['user_version']
+
+        version_regex = r'(\d+(?:\.\d+){0,2})'
+
+        # Try to extract version from display_name
+        display_name = upload.get('display_name', '')
+        version_match = re.search(version_regex, display_name)
+        if version_match:
+            return version_match.group(1)
+
+        # Fall back to extracting version from filename
         filename = upload.get('filename', '')
-        version_match = re.search(r'[-_v](\d+(?:\.\d+)*)[-_.]', filename)
+        version_match = re.search(version_regex, filename)
         if version_match:
             return version_match.group(1)
 
