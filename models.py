@@ -248,6 +248,7 @@ class Game(Base):
                 self.visible = False
                 with Session() as session:
                     session.commit()
+                return
             elif response.status_code == 404:
                 print("\n[refresh_version] Status 404\n")
                 return
