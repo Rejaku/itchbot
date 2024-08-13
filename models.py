@@ -16,7 +16,7 @@ import requests
 from requests import RequestException
 from requests_html import HTMLSession
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
-    Identity
+    Identity, false
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -243,7 +243,12 @@ class Game(Base):
         url = f'https://api.itch.io/games/{self.game_id}/uploads'
         print(f"\n[refresh_version] URL: {url}\n")
         with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
-            if response.status_code == 404:
+            if response.status_code == 400:
+                print(f"\n[refresh_version] Status 400, disabling game ID {self.id}\n")
+                self.visible = False
+                with Session() as session:
+                    session.commit()
+            elif response.status_code == 404:
                 print("\n[refresh_version] Status 404\n")
                 return
             elif response.status_code != 200:
