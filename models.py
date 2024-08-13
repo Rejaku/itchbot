@@ -246,8 +246,6 @@ class Game(Base):
             if response.status_code == 400:
                 print(f"\n[refresh_version] Status 400, disabling game ID {self.id}\n")
                 self.visible = False
-                with Session() as session:
-                    session.commit()
                 return
             elif response.status_code == 404:
                 print("\n[refresh_version] Status 404\n")
