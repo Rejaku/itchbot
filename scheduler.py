@@ -62,7 +62,8 @@ class Scheduler:
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def update_watchlist_page(self, page: int):

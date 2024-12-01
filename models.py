@@ -44,6 +44,8 @@ def proxy_request(request_type, url, **kwargs):
     }
     print(f"Proxy currently being used: {proxy_list[proxy]}")
     response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
+    if response.status_code == 429:
+        raise RateLimitException("Rate limit exceeded")
     return response
 
 
@@ -156,7 +158,8 @@ class Game(Base):
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError,
-                           RequestException),
+                           RequestException,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def refresh_tags_and_rating(self):
@@ -212,7 +215,8 @@ class Game(Base):
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError,
-                           RequestException),
+                           RequestException,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def refresh_base_info(self, itch_api_key):
@@ -236,7 +240,8 @@ class Game(Base):
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError,
-                           RequestException),
+                           RequestException,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def refresh_version(self, itch_api_key, force: bool = False):
@@ -412,7 +417,8 @@ class Game(Base):
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def get_script_stats(self, itch_api_key, upload_info):
@@ -800,7 +806,8 @@ class Rating(Base):
                           (requests.exceptions.Timeout,
                            requests.exceptions.ConnectionError,
                            RequestException,
-                           RuntimeError),
+                           RuntimeError,
+                           RateLimitException),
                           jitter=None,
                           base=60)
     def get_game_id(url):
