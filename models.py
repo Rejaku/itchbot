@@ -44,6 +44,8 @@ def proxy_request(request_type, url, **kwargs):
     }
     print(f"Proxy currently being used: {proxy_list[proxy]}")
     response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
+    if response.status_code == 429:
+        raise RequestException("Status code 429")
     return response
 
 
@@ -412,7 +414,8 @@ class Game(Base):
 
     @backoff.on_exception(backoff.expo,
                           (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
+                           requests.exceptions.ConnectionError,
+                           RequestException),
                           jitter=None,
                           base=60)
     def get_script_stats(self, itch_api_key, upload_info):
