@@ -16,7 +16,7 @@ import requests
 from requests import RequestException
 from requests_html import HTMLSession
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
-    Identity, false
+    Identity
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -630,6 +630,13 @@ class Rating(Base):
         }
 
     @staticmethod
+    @backoff.on_exception(backoff.expo,
+                          (requests.exceptions.Timeout,
+                           requests.exceptions.ConnectionError,
+                           RequestException),
+                          max_tries=8,
+                          jitter=None,
+                          base=20)
     def get_request_session():
         global request_session
         if request_session is not None:
@@ -642,14 +649,20 @@ class Rating(Base):
 
         url = "https://itch.io/login"
         request_session = HTMLSession()
+        time.sleep(10)
         login = request_session.get(url, timeout=5)
+        if login.status_code != 200:
+            raise RequestException("Status code not 200, retrying")
         s = BeautifulSoup(login.text, "html.parser")
         csrf_token = s.find("input", {"name": "csrf_token"})["value"]
-        request_session.post(
+        time.sleep(10)
+        response = request_session.post(
             url,
             {"username": ITCH_USER, "password": ITCH_PASSWORD, "csrf_token": csrf_token},
             timeout=5
         )
+        if response.status_code != 200:
+            raise RequestException("Status code not 200, retrying")
         return request_session
 
     @staticmethod
