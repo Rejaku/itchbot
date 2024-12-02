@@ -40,8 +40,9 @@ request_session = None
                       (requests.exceptions.Timeout,
                        requests.exceptions.ConnectionError,
                        RequestException),
+                      max_tries=8,
                       jitter=None,
-                      base=60)
+                      base=20)
 def proxy_request(request_type, url, **kwargs):
     proxy = random.randint(0, len(proxy_list) - 1)
     proxies = {
