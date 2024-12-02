@@ -35,7 +35,7 @@ proxy_list = os.environ["PROXY_LIST"].split(',')
 Base = declarative_base()
 request_session = None
 
-@retry(wait=wait_exponential(multiplier=2, min=10, max=120))
+@retry(wait=wait_exponential(multiplier=2, min=30, max=120))
 def proxy_request(request_type, url, **kwargs):
     proxy = random.randint(0, len(proxy_list) - 1)
     proxies = {
@@ -623,7 +623,7 @@ class Rating(Base):
         }
 
     @staticmethod
-    @retry(wait=wait_exponential(multiplier=2, min=10, max=120))
+    @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
     def get_request_session():
         global request_session
         if request_session is not None:
