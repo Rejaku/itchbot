@@ -49,7 +49,9 @@ def proxy_request(request_type, url, **kwargs):
         "http": 'http://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
         "https": 'https://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
     }
-    print(f"Proxy currently being used: {proxy_list[proxy]}")
+    print(f"[proxy_request] Proxy currently being used: {proxy_list[proxy]}")
+    print(f"[proxy_request] URL requested: {url}")
+    time.sleep(10)
     response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
     if response.status_code != requests.codes.ok:
         print("\n[proxy_request] Status != 200: " + str(response.status_code) + "\n")
