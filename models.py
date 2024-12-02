@@ -402,8 +402,8 @@ class Game(Base):
             if response.status_code == 400 or response.status_code == 404:
                 return
             download = json.loads(response.text)
-            print("\n[get_script_stats] Download response: " + download + "\n")
             if 'url' in download:
+                print("\n[get_script_stats] Download response: " + download['url'] + "\n")
                 download_path = 'tmp/' + upload_info['filename']
                 try:
                     file = proxy_request("get", download['url'], allow_redirects=True)
