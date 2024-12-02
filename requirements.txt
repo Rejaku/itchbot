@@ -1,5 +1,4 @@
 alembic
-backoff
 bs4
 flake8
 Flask
@@ -14,6 +13,7 @@ schedule
 sqlalchemy
 sqlalchemy2-stubs
 sqlalchemy-json
+tenacity
 types-beautifulsoup4
 types-waitress
 waitress
