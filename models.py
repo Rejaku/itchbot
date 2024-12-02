@@ -36,6 +36,12 @@ Base = declarative_base()
 request_session = None
 
 
+@backoff.on_exception(backoff.expo,
+                      (requests.exceptions.Timeout,
+                       requests.exceptions.ConnectionError,
+                       RequestException),
+                      jitter=None,
+                      base=60)
 def proxy_request(request_type, url, **kwargs):
     proxy = random.randint(0, len(proxy_list) - 1)
     proxies = {
@@ -44,8 +50,10 @@ def proxy_request(request_type, url, **kwargs):
     }
     print(f"Proxy currently being used: {proxy_list[proxy]}")
     response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
-    if response.status_code == 429:
-        raise RequestException("Status code 429")
+    if response.status_code != requests.codes.ok:
+        print("\n[proxy_request] Status != 200: " + str(response.status_code) + "\n")
+    if response.status_code != 200 and response.status_code != 400 and response.status_code != 404:
+        raise RequestException("Status code not 200, 400 or 404, retrying")
     return response
 
 
@@ -155,22 +163,11 @@ class Game(Base):
             'uploads': self.uploads
         }
 
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           RequestException),
-                          jitter=None,
-                          base=60)
     def refresh_tags_and_rating(self):
         print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
         with proxy_request("get", self.url, allow_redirects=True) as response:
-            if response.status_code == 404:
-                print("\n[refresh_tags_and_rating] Status 404\n")
+            if response.status_code == 400 or response.status_code == 404:
                 return
-            elif response.status_code != 200:
-                print("\n[refresh_tags_and_rating] Status != 200: " + str(response.status_code) + "\n")
-                raise RequestException("Status code not 200, retrying")
-
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             if self.status not in ['Abandoned', 'Canceled', 'Released']:
@@ -211,23 +208,12 @@ class Game(Base):
             else:
                 self.nsfw = False
 
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           RequestException),
-                          jitter=None,
-                          base=60)
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + str(self.game_id)
         print("\n[refresh_base_info] URL: " + url + "\n")
         with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
-            if response.status_code == 404:
-                print("\n[refresh_base_info] Status 404\n")
+            if response.status_code == 400 or response.status_code == 404:
                 return
-            elif response.status_code != 200:
-                print("\n[refresh_base_info] Status != 200: " + str(response.status_code) + "\n")
-                raise RequestException("Status code not 200, retrying")
-
             game = json.loads(response.text)
             if 'game' in game:
                 self.created_at = datetime.datetime.fromisoformat(
@@ -235,26 +221,14 @@ class Game(Base):
                 )
                 self.thumb_url = game['game']['cover_url']
 
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           RequestException),
-                          jitter=None,
-                          base=60)
     def refresh_version(self, itch_api_key, force: bool = False):
         url = f'https://api.itch.io/games/{self.game_id}/uploads'
         print(f"\n[refresh_version] URL: {url}\n")
         with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
-            if response.status_code == 400:
+            if response.status_code == 400 or response.status_code == 404:
                 print(f"\n[refresh_version] Status 400, disabling game ID {self.id}\n")
                 self.visible = False
                 return
-            elif response.status_code == 404:
-                print("\n[refresh_version] Status 404\n")
-                return
-            elif response.status_code != 200:
-                print(f"\n[refresh_version] Status != 200: {response.status_code}\n")
-                raise RequestException("Status code not 200, retrying")
 
             seen_uploads = self.uploads or {}
             uploads_data = json.loads(response.text)
@@ -412,12 +386,6 @@ class Game(Base):
         timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
         return timestamp.strftime("%Y.%m.%d")
 
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           RequestException),
-                          jitter=None,
-                          base=60)
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
@@ -431,11 +399,16 @@ class Game(Base):
         print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
         with proxy_request("post", url, headers={'Authorization': itch_api_key}) as response:
+            if response.status_code == 400 or response.status_code == 404:
+                return
             download = json.loads(response.text)
+            print("\n[get_script_stats] Download response: " + download + "\n")
             if 'url' in download:
                 download_path = 'tmp/' + upload_info['filename']
                 try:
                     file = proxy_request("get", download['url'], allow_redirects=True)
+                    if response.status_code == 400 or response.status_code == 404:
+                        return
                     open(download_path, 'wb').write(file.content)
                 except RequestException as error:
                     self.error = error
@@ -654,12 +627,6 @@ class Rating(Base):
         }
 
     @staticmethod
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           TypeError),
-                          jitter=None,
-                          base=60)
     def get_request_session():
         global request_session
         if request_session is not None:
@@ -705,11 +672,6 @@ class Rating(Base):
             time.sleep(30)
 
     @staticmethod
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
-                          jitter=None,
-                          base=60)
     def import_reviews(request_session, start_event_id=None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id
@@ -799,23 +761,11 @@ class Rating(Base):
         return start_event_id
 
     @staticmethod
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError,
-                           RequestException,
-                           RuntimeError),
-                          jitter=None,
-                          base=60)
     def get_game_id(url):
         print("\n[get_game_id] URL: " + url + "\n")
         with proxy_request("get", url, allow_redirects=True) as response:
-            if response.status_code == 404:
-                print("\n[get_game_id] Status 404\n")
-                return None
-            elif response.status_code != 200:
-                print("\n[get_game_id] Status != 200: " + str(response.status_code) + "\n")
-                raise RequestException("Status code not 200, retrying")
-
+            if response.status_code == 400 or response.status_code == 404:
+                raise RuntimeError("Could not find game ID")
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
             itch_path = soup.find("meta", {"name": "itch:path"})

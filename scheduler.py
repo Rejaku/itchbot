@@ -60,17 +60,14 @@ class Scheduler:
         self.itch_api_key = None
         self.itch_collection_id = None
 
-    @backoff.on_exception(backoff.expo,
-                          (requests.exceptions.Timeout,
-                           requests.exceptions.ConnectionError),
-                          jitter=None,
-                          base=60)
     def update_watchlist_page(self, page: int):
         with models.proxy_request(
                 'get',
                 'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
                 headers={'Authorization': self.itch_api_key}
         ) as response:
+            if response.status_code == 400 or response.status_code == 404:
+                return False
             collection = json.loads(response.text)
             if len(collection['collection_games']) == 0:
                 print("\nNo more!\n")
