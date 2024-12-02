@@ -21,6 +21,7 @@ from sqlalchemy_json import mutable_json_type
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from bs4 import BeautifulSoup
 from shlex import quote
+from tenacity import retry
 
 engine = create_engine(
     f'postgresql+psycopg2://{os.environ["DB_USER"]}:{os.environ["DB_PASSWORD"]}@db/{os.environ["DB"]}?client_encoding=utf8',
