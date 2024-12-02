@@ -13,7 +13,6 @@ import time
 
 import requests
 from requests import RequestException
-from requests_html import HTMLSession
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
     Identity
 from sqlalchemy.dialects.postgresql import JSONB
@@ -34,6 +33,7 @@ proxy_list = os.environ["PROXY_LIST"].split(',')
 
 Base = declarative_base()
 request_session = None
+COOKIES_FILE = 'itch_cookies.pkl'
 
 @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
 def proxy_request(request_type, url, **kwargs):
@@ -626,30 +626,60 @@ class Rating(Base):
     @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
     def get_request_session():
         global request_session
-        if request_session is not None:
-            return request_session
 
-        print("\n[get_request_session] Attempting Login\n")
+        # Try to load existing session with cookies
+        if os.path.exists(COOKIES_FILE):
+            with open(COOKIES_FILE, 'rb') as f:
+                cookies = pickle.load(f)
+                request_session = requests.Session()
+                request_session.cookies.update(cookies)
 
-        ITCH_USER = os.environ['ITCH_USER']
-        ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
+                # Verify the session is still valid with a test request
+                try:
+                    test_response = request_session.get('https://itch.io/dashboard', timeout=5)
+                    if test_response.status_code == 200 and 'login' not in test_response.url:
+                        return request_session
+                except:
+                    pass
 
-        url = "https://itch.io/login"
-        request_session = HTMLSession()
-        time.sleep(10)
-        login = request_session.get(url, timeout=5)
-        if login.status_code != 200:
-            raise RequestException("Status code not 200, retrying")
-        s = BeautifulSoup(login.text, "html.parser")
-        csrf_token = s.find("input", {"name": "csrf_token"})["value"]
-        time.sleep(10)
-        response = request_session.post(
-            url,
-            {"username": ITCH_USER, "password": ITCH_PASSWORD, "csrf_token": csrf_token},
-            timeout=5
-        )
-        if response.status_code != 200:
-            raise RequestException("Status code not 200, retrying")
+        # If no valid session exists, create a new one
+        if request_session is None:
+            print("\n[get_request_session] Attempting Login\n")
+
+            ITCH_USER = os.environ['ITCH_USER']
+            ITCH_PASSWORD = os.environ['ITCH_PASSWORD']
+
+            request_session = requests.Session()
+
+            # Get CSRF token
+            url = "https://itch.io/login"
+            time.sleep(10)
+            login = request_session.get(url, timeout=5)
+            if login.status_code != 200:
+                raise RequestException("Status code not 200, retrying")
+
+            soup = BeautifulSoup(login.text, "html.parser")
+            csrf_token = soup.find("input", {"name": "csrf_token"})["value"]
+
+            # Login
+            time.sleep(10)
+            response = request_session.post(
+                url,
+                data={
+                    "username": ITCH_USER,
+                    "password": ITCH_PASSWORD,
+                    "csrf_token": csrf_token
+                },
+                timeout=5
+            )
+
+            if response.status_code != 200:
+                raise RequestException("Status code not 200, retrying")
+
+            # Save cookies for future use
+            with open(COOKIES_FILE, 'wb') as f:
+                pickle.dump(request_session.cookies, f)
+
         return request_session
 
     @staticmethod
