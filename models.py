@@ -11,7 +11,6 @@ import tarfile
 import shutil
 import time
 
-import backoff
 import requests
 from requests import RequestException
 from requests_html import HTMLSession
