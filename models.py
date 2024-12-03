@@ -705,6 +705,7 @@ class Rating(Base):
             time.sleep(30)
 
     @staticmethod
+    @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
     def import_reviews(request_session, start_event_id=None):
         url = 'https://itch.io/feed?filter=ratings&format=json'
         previous_start_event_id = start_event_id
