@@ -45,7 +45,7 @@ def proxy_request(request_type, url, **kwargs):
     print(f"[proxy_request] Proxy currently being used: {proxy_list[proxy]}")
     print(f"[proxy_request] URL requested: {url}")
     time.sleep(10)
-    response = requests.request(request_type, url, proxies=proxies, timeout=5, **kwargs)
+    response = requests.request(request_type, url, proxies=proxies, timeout=(3.05, 30), **kwargs)
     if response.status_code != requests.codes.ok:
         print("\n[proxy_request] Status != 200: " + str(response.status_code) + "\n")
     if response.status_code != 200 and response.status_code != 400 and response.status_code != 404:
