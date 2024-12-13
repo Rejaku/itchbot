@@ -334,53 +334,112 @@ class Game(Base):
                         session.commit()
 
     def extract_version(self, upload):
-        # Prioritize build.user_version if it exists
-        if 'build' in upload and upload['build'].get('user_version'):
-            return upload['build']['user_version']
+        def parse_semantic_version(version_str):
+            """Parse a version string into tuple of integers for comparison"""
+            try:
+                # Remove any leading 'v' or 'version'
+                version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
+                # Split on dots and convert to integers
+                parts = [int(x) for x in version_str.split('.')]
+                # Pad with zeros to ensure at least 3 components
+                while len(parts) < 3:
+                    parts.append(0)
+                return parts
+            except (ValueError, AttributeError):
+                return None
 
-        version_regex = r'(\d+(?:\.\d+){0,3})'  # Supports up to 4 components
+        def is_probable_year(version_parts):
+            """Check if the version number looks like a year"""
+            if len(version_parts) >= 1:
+                first_num = version_parts[0]
+                return 1990 <= first_num <= 2100
 
-        def score_version(version):
-            # Higher score means more likely to be a proper version number
-            score = 0
-            components = version.split('.')
+        def is_probable_version(version_str):
+            """Check if a string looks like a probable version number"""
+            if not version_str:
+                return False
 
-            # Prefer versions with 2-4 components
-            if 2 <= len(components) <= 4:
-                score += 5
+            parts = parse_semantic_version(version_str)
+            if not parts:
+                return False
 
-            # Prefer versions where first component is not too large (likely not a date)
-            if components and int(components[0]) < 100:
-                score += 3
+            # Reject if first number is too large (unless it's a probable year)
+            if parts[0] > 100 and not is_probable_year(parts):
+                return False
 
-            # Prefer versions with smaller numbers (less likely to be a file size or timestamp)
-            score += sum(4 - min(len(comp), 3) for comp in components)
+            # Reject if any part is suspiciously large (likely a timestamp or file size)
+            if any(p > 10000 for p in parts):
+                return False
 
-            return score
+            return True
 
-        # Function to find and score all matches in a string
-        def find_best_match(text):
-            matches = re.finditer(version_regex, text)
-            scored_matches = [(match.group(1), score_version(match.group(1))) for match in matches]
-            return max(scored_matches, key=lambda x: x[1], default=(None, -1))
+        def compare_versions(ver1, ver2):
+            """Compare two version strings, return the higher one"""
+            if not ver1:
+                return ver2
+            if not ver2:
+                return ver1
 
-        # Try to extract version from display_name
-        display_name = upload.get('display_name', '')
-        display_name_match, display_name_score = find_best_match(display_name)
+            parts1 = parse_semantic_version(ver1)
+            parts2 = parse_semantic_version(ver2)
 
-        # Try to extract version from filename
+            if not parts1:
+                return ver2
+            if not parts2:
+                return ver1
+
+            # If one is a year and the other isn't, prefer the non-year
+            year1 = is_probable_year(parts1)
+            year2 = is_probable_year(parts2)
+            if year1 and not year2:
+                return ver2
+            if year2 and not year1:
+                return ver1
+
+            # Compare parts
+            for p1, p2 in zip(parts1, parts2):
+                if p1 > p2:
+                    return ver1
+                if p2 > p1:
+                    return ver2
+            return ver1  # If equal, return first
+
+        # Collect all possible version numbers from various sources
+        version_regex = r'(\d+(?:\.\d+){0,3})'
+        version_candidates = []
+
+        # Check build.user_version
+        if 'build' in upload and upload['build'] and upload['build'].get('user_version'):
+            version_candidates.append(upload['build']['user_version'])
+
+        # Check display_name
+        display_name = upload.get('display_name')
+        if display_name:
+            versions = re.finditer(version_regex, display_name)
+            version_candidates.extend(match.group(1) for match in versions)
+
+        # Check filename
         filename = upload.get('filename', '')
-        filename_match, filename_score = find_best_match(filename)
+        versions = re.finditer(version_regex, filename)
+        version_candidates.extend(match.group(1) for match in versions)
 
-        # Choose the best match between display_name and filename
-        if display_name_score > filename_score and display_name_match:
-            return display_name_match
-        elif filename_match:
-            return filename_match
+        # Filter to probable versions and remove duplicates
+        version_candidates = list(set(
+            ver for ver in version_candidates
+            if is_probable_version(ver)
+        ))
 
-        # If no version found, use the update timestamp
-        timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
-        return timestamp.strftime("%Y.%m.%d")
+        if not version_candidates:
+            # If no valid versions found, use timestamp
+            timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
+            return timestamp.strftime("%Y.%m.%d")
+
+        # Compare all candidates to find the highest version
+        highest_version = version_candidates[0]
+        for version in version_candidates[1:]:
+            highest_version = compare_versions(highest_version, version)
+
+        return highest_version
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
