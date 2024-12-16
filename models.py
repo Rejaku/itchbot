@@ -418,9 +418,10 @@ class Game(Base):
             versions = re.finditer(version_regex, display_name)
             version_candidates.extend(match.group(1) for match in versions)
 
-        # Check filename
+        # Check filename - remove expected file extensions first
         filename = upload.get('filename', '')
-        versions = re.finditer(version_regex, filename)
+        cleaned_filename = re.sub(r'\.(zip|tar\.bz2|tar\.gz)$', '', filename, flags=re.IGNORECASE)
+        versions = re.finditer(version_regex, cleaned_filename)
         version_candidates.extend(match.group(1) for match in versions)
 
         # Filter to probable versions and remove duplicates
