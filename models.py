@@ -335,24 +335,47 @@ class Game(Base):
 
     def extract_version(self, upload):
         def parse_semantic_version(version_str):
-            """Parse a version string into tuple of integers for comparison"""
+            """Parse a version string into tuple of (integers, suffix) for comparison"""
             try:
                 # Remove any leading 'v' or 'version'
                 version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
+                # Extract base version and suffix
+                match = re.match(r'(\d+(?:\.\d+)*)([a-zA-Z])?', version_str)
+                if not match:
+                    return None
                 # Split on dots and convert to integers
-                parts = [int(x) for x in version_str.split('.')]
+                parts = [int(x) for x in match.group(1).split('.')]
+                # Get suffix if present
+                suffix = match.group(2) if match.group(2) else ''
                 # Pad with zeros to ensure at least 3 components
                 while len(parts) < 3:
                     parts.append(0)
-                return parts
+                return (parts, suffix)
             except (ValueError, AttributeError):
                 return None
 
-        def is_probable_year(version_parts):
-            """Check if the version number looks like a year"""
-            if len(version_parts) >= 1:
-                first_num = version_parts[0]
-                return 1990 <= first_num <= 2100
+        def get_version_score(version_str):
+            """Score a version string based on how likely it is to be a semantic version"""
+            if not version_str:
+                return -1
+
+            # Highest priority: matches semantic version with proper delimiters
+            if re.match(r'(?:[vV](?:ersion)?)?(\d+\.\d+(?:\.\d+)*[a-zA-Z]?)(?=[-\s._)]|$)', version_str):
+                return 4
+
+            # High priority: matches semantic version
+            if re.match(r'[vV]?(?:ersion\s*)?(\d+\.\d+(?:\.\d+)*[a-zA-Z]?)', version_str):
+                return 3
+
+            # Medium priority: simple number sequences that look like versions
+            if re.match(r'\d+\.\d+[a-zA-Z]?', version_str):
+                return 2
+
+            # Lower priority: single numbers that might be versions
+            if re.match(r'\d+[a-zA-Z]?', version_str):
+                return 1
+
+            return 0
 
         def is_probable_version(version_str):
             """Check if a string looks like a probable version number"""
@@ -363,37 +386,39 @@ class Game(Base):
             if not parts:
                 return False
 
-            # Reject if first number is too large (unless it's a probable year)
-            if parts[0] > 100 and not is_probable_year(parts):
+            # Reject if first number is too large (unless it's a year)
+            if parts[0] > 100 and not (1990 <= parts[0] <= 2100):
                 return False
 
-            # Reject if any part is suspiciously large (likely a timestamp or file size)
+            # Reject if any part is suspiciously large
             if any(p > 10000 for p in parts):
                 return False
 
             return True
 
         def compare_versions(ver1, ver2):
-            """Compare two version strings, return the higher one"""
+            """Compare two version strings, return the higher priority one"""
             if not ver1:
                 return ver2
             if not ver2:
                 return ver1
 
+            # Compare version scores first
+            score1 = get_version_score(ver1)
+            score2 = get_version_score(ver2)
+
+            if score1 > score2:
+                return ver1
+            if score2 > score1:
+                return ver2
+
+            # If scores are equal, compare version numbers
             parts1 = parse_semantic_version(ver1)
             parts2 = parse_semantic_version(ver2)
 
             if not parts1:
                 return ver2
             if not parts2:
-                return ver1
-
-            # If one is a year and the other isn't, prefer the non-year
-            year1 = is_probable_year(parts1)
-            year2 = is_probable_year(parts2)
-            if year1 and not year2:
-                return ver2
-            if year2 and not year1:
                 return ver1
 
             # Compare parts
@@ -405,7 +430,8 @@ class Game(Base):
             return ver1  # If equal, return first
 
         # Collect all possible version numbers from various sources
-        version_regex = r'(\d+(?:\.\d+){0,3})'
+        # Updated regex to match semantic versions with optional suffix and proper delimiters
+        version_regex = r'(?:[vV](?:ersion)?)?(\d+(?:\.\d+){0,3}[a-zA-Z]?)(?=[-\s._)]|$)'
         version_candidates = []
 
         # Check build.user_version
@@ -435,12 +461,22 @@ class Game(Base):
             timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
             return timestamp.strftime("%Y.%m.%d")
 
-        # Compare all candidates to find the highest version
+        # Compare all candidates to find the highest priority version
         highest_version = version_candidates[0]
         for version in version_candidates[1:]:
             highest_version = compare_versions(highest_version, version)
 
-        return highest_version
+            # Convert parsed version back to string format
+            result = parse_semantic_version(highest_version)
+            if result:
+                parts, suffix = result
+                # Join all parts with dots
+                version_str = '.'.join(str(p) for p in parts)
+                # Add suffix if present
+                if suffix:
+                    version_str += suffix
+                return version_str
+            return highest_version
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
