@@ -342,6 +342,7 @@ class Game(Base):
 
             # Remove any leading 'v' or 'version'
             version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
+            version_str = re.sub(r'^[vV]\s*', '', version_str)
 
             # Extract base version and suffix
             match = re.match(r'(\d+(?:\.\d+)*)([a-zA-Z])?', version_str)
@@ -353,10 +354,6 @@ class Game(Base):
                 parts = [int(x) for x in match.group(1).split('.')]
                 # Get suffix if present
                 suffix = match.group(2) if match.group(2) else ''
-
-                # Pad with zeros to ensure at least 3 components
-                while len(parts) < 3:
-                    parts.append(0)
 
                 return (parts, suffix)
             except (ValueError, AttributeError):
@@ -435,11 +432,19 @@ class Game(Base):
             nums1, suffix1 = parts1
             nums2, suffix2 = parts2
 
+            # Compare the parts we have, without padding
             for n1, n2 in zip(nums1, nums2):
                 if n1 > n2:
                     return ver1
                 if n2 > n1:
                     return ver2
+
+            # If one version has more parts and they're equal so far,
+            # the longer one is considered higher
+            if len(nums1) > len(nums2):
+                return ver1
+            if len(nums2) > len(nums1):
+                return ver2
 
             # If numeric parts are equal, compare suffixes
             if suffix1 > suffix2:
