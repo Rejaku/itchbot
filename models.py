@@ -3,6 +3,7 @@
 import datetime
 import json
 import os
+import pickle
 import random
 import re
 import subprocess
@@ -336,20 +337,27 @@ class Game(Base):
     def extract_version(self, upload):
         def parse_semantic_version(version_str):
             """Parse a version string into tuple of (integers, suffix) for comparison"""
+            if not version_str:
+                return None
+
+            # Remove any leading 'v' or 'version'
+            version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
+
+            # Extract base version and suffix
+            match = re.match(r'(\d+(?:\.\d+)*)([a-zA-Z])?', version_str)
+            if not match:
+                return None
+
             try:
-                # Remove any leading 'v' or 'version'
-                version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
-                # Extract base version and suffix
-                match = re.match(r'(\d+(?:\.\d+)*)([a-zA-Z])?', version_str)
-                if not match:
-                    return None
                 # Split on dots and convert to integers
                 parts = [int(x) for x in match.group(1).split('.')]
                 # Get suffix if present
                 suffix = match.group(2) if match.group(2) else ''
+
                 # Pad with zeros to ensure at least 3 components
                 while len(parts) < 3:
                     parts.append(0)
+
                 return (parts, suffix)
             except (ValueError, AttributeError):
                 return None
@@ -382,9 +390,11 @@ class Game(Base):
             if not version_str:
                 return False
 
-            parts = parse_semantic_version(version_str)
-            if not parts:
+            parsed = parse_semantic_version(version_str)
+            if not parsed:
                 return False
+
+            parts, _ = parsed
 
             # Reject if first number is too large (unless it's a year)
             if parts[0] > 100 and not (1990 <= parts[0] <= 2100):
@@ -421,16 +431,35 @@ class Game(Base):
             if not parts2:
                 return ver1
 
-            # Compare parts
-            for p1, p2 in zip(parts1, parts2):
-                if p1 > p2:
+            # Compare numeric parts first
+            nums1, suffix1 = parts1
+            nums2, suffix2 = parts2
+
+            for n1, n2 in zip(nums1, nums2):
+                if n1 > n2:
                     return ver1
-                if p2 > p1:
+                if n2 > n1:
                     return ver2
-            return ver1  # If equal, return first
+
+            # If numeric parts are equal, compare suffixes
+            if suffix1 > suffix2:
+                return ver1
+            if suffix2 > suffix1:
+                return ver2
+
+            return ver1  # If completely equal, return first
+
+        def format_version(version_parts):
+            """Convert parsed version parts back to string format"""
+            if not version_parts:
+                return None
+            nums, suffix = version_parts
+            version_str = '.'.join(str(p) for p in nums)
+            if suffix:
+                version_str += suffix
+            return version_str
 
         # Collect all possible version numbers from various sources
-        # Updated regex to match semantic versions with optional suffix and proper delimiters
         version_regex = r'(?:[vV](?:ersion)?)?(\d+(?:\.\d+){0,3}[a-zA-Z]?)(?=[-\s._)]|$)'
         version_candidates = []
 
@@ -466,17 +495,11 @@ class Game(Base):
         for version in version_candidates[1:]:
             highest_version = compare_versions(highest_version, version)
 
-            # Convert parsed version back to string format
-            result = parse_semantic_version(highest_version)
-            if result:
-                parts, suffix = result
-                # Join all parts with dots
-                version_str = '.'.join(str(p) for p in parts)
-                # Add suffix if present
-                if suffix:
-                    version_str += suffix
-                return version_str
-            return highest_version
+        # Always return a properly formatted version string
+        parsed_version = parse_semantic_version(highest_version)
+        formatted_version = format_version(parsed_version)
+
+        return formatted_version if formatted_version else highest_version
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown
