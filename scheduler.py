@@ -60,7 +60,7 @@ class Scheduler:
         self.itch_collection_id = None
 
     def update_watchlist_page(self, page: int):
-        with models.proxy_request(
+        with models.make_request(
                 'get',
                 'https://api.itch.io/collections/' + self.itch_collection_id + '/collection-games?page=' + str(page),
                 headers={'Authorization': self.itch_api_key}

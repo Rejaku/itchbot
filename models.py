@@ -4,7 +4,6 @@ import datetime
 import json
 import os
 import pickle
-import random
 import re
 import subprocess
 import zipfile
@@ -30,27 +29,26 @@ engine = create_engine(
     echo=True
 )
 Session = sessionmaker(bind=engine)
-proxy_list = os.environ["PROXY_LIST"].split(',')
 
 Base = declarative_base()
 request_session = None
 COOKIES_FILE = 'itch_cookies.pkl'
 
 @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
-def proxy_request(request_type, url, **kwargs):
-    proxy = random.randint(0, len(proxy_list) - 1)
-    proxies = {
-        "http": 'http://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
-        "https": 'https://' + os.environ["PROXY_USER"] + ':' + os.environ["PROXY_PASSWORD"] + '@' + proxy_list[proxy],
-    }
-    print(f"[proxy_request] Proxy currently being used: {proxy_list[proxy]}")
-    print(f"[proxy_request] URL requested: {url}")
-    time.sleep(10)
-    response = requests.request(request_type, url, proxies=proxies, timeout=(3.05, 30), **kwargs)
+def make_request(request_type, url, **kwargs):
+    """
+    Make an HTTP request with retry functionality
+    """
+    print(f"[make_request] URL requested: {url}")
+    time.sleep(10)  # Keep the rate limiting
+    response = requests.request(request_type, url, timeout=(3.05, 30), **kwargs)
+
     if response.status_code != requests.codes.ok:
-        print("\n[proxy_request] Status != 200: " + str(response.status_code) + "\n")
-    if response.status_code != 200 and response.status_code != 400 and response.status_code != 404:
+        print(f"\n[make_request] Status != 200: {response.status_code}\n")
+
+    if response.status_code not in [200, 400, 404]:
         raise RequestException("Status code not 200, 400 or 404, retrying")
+
     return response
 
 
@@ -162,7 +160,7 @@ class Game(Base):
 
     def refresh_tags_and_rating(self):
         print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
-        with proxy_request("get", self.url, allow_redirects=True) as response:
+        with make_request("get", self.url, allow_redirects=True) as response:
             if response.status_code == 400 or response.status_code == 404:
                 return
             html = response.text
@@ -208,7 +206,7 @@ class Game(Base):
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + str(self.game_id)
         print("\n[refresh_base_info] URL: " + url + "\n")
-        with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
+        with make_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 400 or response.status_code == 404:
                 return
             game = json.loads(response.text)
@@ -221,7 +219,7 @@ class Game(Base):
     def refresh_version(self, itch_api_key, force: bool = False):
         url = f'https://api.itch.io/games/{self.game_id}/uploads'
         print(f"\n[refresh_version] URL: {url}\n")
-        with proxy_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
+        with make_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 400 or response.status_code == 404:
                 print(f"\n[refresh_version] Status 400, disabling game ID {self.id}\n")
                 self.visible = False
@@ -518,7 +516,7 @@ class Game(Base):
         url = self.url + '/file/' + str(upload_info['id'])
         print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
-        with proxy_request("post", url, headers={'Authorization': itch_api_key}) as response:
+        with make_request("post", url, headers={'Authorization': itch_api_key}) as response:
             if response.status_code == 400 or response.status_code == 404:
                 return
             download = json.loads(response.text)
@@ -526,7 +524,7 @@ class Game(Base):
                 print("\n[get_script_stats] Download response: " + download['url'] + "\n")
                 download_path = 'tmp/' + upload_info['filename']
                 try:
-                    file = proxy_request("get", download['url'], allow_redirects=True)
+                    file = make_request("get", download['url'], allow_redirects=True)
                     if response.status_code == 400 or response.status_code == 404:
                         return
                     open(download_path, 'wb').write(file.content)
@@ -921,7 +919,7 @@ class Rating(Base):
     @staticmethod
     def get_game_id(url):
         print("\n[get_game_id] URL: " + url + "\n")
-        with proxy_request("get", url, allow_redirects=True) as response:
+        with make_request("get", url, allow_redirects=True) as response:
             if response.status_code == 400 or response.status_code == 404:
                 raise RuntimeError("Could not find game ID")
             html = response.text
