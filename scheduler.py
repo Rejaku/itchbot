@@ -6,12 +6,26 @@ from typing import Optional
 
 from bs4 import BeautifulSoup
 import schedule
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, Integer, DateTime, desc
 
 import models
 from models import engine, Session, Base, Game, Rating
 
 Base.metadata.create_all(engine)
+
+
+class ProcessedEvent(Base):
+    __tablename__ = 'processed_events'
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, nullable=False, index=True)
+    game_id = Column(Integer, nullable=False)
+    processed_at = Column(DateTime, nullable=False)
+
+    def __init__(self, event_id, game_id):
+        self.event_id = event_id
+        self.game_id = game_id
+        self.processed_at = datetime.datetime.utcnow()
 
 
 def refresh_tags_and_rating():
@@ -55,18 +69,6 @@ def refresh_version(itch_api_key, status=None):
     print("\n[refresh_version] End\n")
 
 
-class LastProcessedEvent(Base):
-    __tablename__ = 'last_processed_event'
-
-    id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, nullable=False)
-    processed_at = Column(DateTime, nullable=False)
-
-    def __init__(self, event_id):
-        self.event_id = event_id
-        self.processed_at = datetime.datetime.utcnow()
-
-
 class Scheduler:
     def __init__(self):
         self.itch_api_key = None
@@ -102,6 +104,12 @@ class Scheduler:
         event_rows = soup.find_all("div", {"class": "event_row"})
 
         with Session() as db_session:
+            # Get highest processed event ID once before the loop
+            highest_processed = db_session.query(ProcessedEvent) \
+                .order_by(desc(ProcessedEvent.event_id)) \
+                .first()
+            highest_event_id = highest_processed.event_id if highest_processed else None
+
             for event_row in event_rows:
                 # Get event ID from the like button
                 like_btn = event_row.find("span", {"class": "like_btn"})
@@ -109,6 +117,18 @@ class Scheduler:
                     continue
 
                 event_id = int(like_btn['data-like_url'].split('/')[-2])
+
+                # If we've reached an event ID that's lower than or equal to our highest processed ID,
+                # we can stop processing entirely
+                if highest_event_id and event_id <= highest_event_id:
+                    return None  # This will break the pagination loop too
+
+                event_id = int(like_btn['data-like_url'].split('/')[-2])
+
+                # Check if we've already processed this event
+                existing_event = db_session.query(ProcessedEvent).filter_by(event_id=event_id).first()
+                if existing_event:
+                    continue
 
                 # Look for uploads
                 upload_list = event_row.find("div", {"class": "upload_list_widget"})
@@ -149,7 +169,7 @@ class Scheduler:
 
                     print(f"\n[process_feed_page] Creating new game {game_id}: {game_title}\n")
 
-                    # Create new game entry
+                    # Create new game entry - note visible=False
                     game = Game(
                         game_id=game_id,
                         name=game_title,
@@ -157,7 +177,7 @@ class Scheduler:
                         url=game_url,
                         thumb_url=game_thumb_url,
                         version='unknown',
-                        visible=True
+                        visible=False  # Let collection process handle visibility
                     )
                     db_session.add(game)
                     db_session.commit()
@@ -167,21 +187,16 @@ class Scheduler:
                 try:
                     game.refresh_version(self.itch_api_key)
                     game.error = None
+
+                    # Record that we processed this event
+                    processed_event = ProcessedEvent(event_id, game_id)
+                    db_session.add(processed_event)
+
                 except Exception as exception:
                     print(f"\n[Update Error] {exception}\n")
                     game.error = str(exception)
                 db_session.commit()
                 time.sleep(10)
-
-            # Update last processed event
-            last_processed = db_session.query(LastProcessedEvent).first()
-            if not last_processed:
-                last_processed = LastProcessedEvent(event_id)
-                db_session.add(last_processed)
-            else:
-                last_processed.event_id = event_id
-                last_processed.processed_at = datetime.datetime.utcnow()
-            db_session.commit()
 
         return feed_data.get('next_page')
 
@@ -190,7 +205,10 @@ class Scheduler:
         print("\n[process_feed] Start\n")
 
         with Session() as session:
-            last_processed = session.query(LastProcessedEvent).first()
+            # Get highest event ID we've processed
+            last_processed = session.query(ProcessedEvent) \
+                .order_by(desc(ProcessedEvent.event_id)) \
+                .first()
             last_event_id = last_processed.event_id if last_processed else None
 
         current_page = None
