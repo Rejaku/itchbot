@@ -333,52 +333,28 @@ class Game(Base):
                         session.commit()
 
     def extract_version(self, upload):
+        """Extract version information from upload metadata."""
+
         def parse_semantic_version(version_str):
             """Parse a version string into tuple of (integers, suffix) for comparison"""
             if not version_str:
                 return None
 
-            # Remove any leading 'v' or 'version'
+            # Remove leading 'v' or 'version'
             version_str = re.sub(r'^[vV]ersion\s*', '', version_str)
             version_str = re.sub(r'^[vV]\s*', '', version_str)
 
-            # Extract base version and suffix
-            match = re.match(r'(\d+(?:\.\d+)*)([a-zA-Z])?', version_str)
+            # Match version pattern
+            match = re.match(r'(\d+(?:\.\d+)*?)([a-zA-Z])?$', version_str)
             if not match:
                 return None
 
             try:
-                # Split on dots and convert to integers
                 parts = [int(x) for x in match.group(1).split('.')]
-                # Get suffix if present
-                suffix = match.group(2) if match.group(2) else ''
-
+                suffix = match.group(2) or ''
                 return (parts, suffix)
             except (ValueError, AttributeError):
                 return None
-
-        def get_version_score(version_str):
-            """Score a version string based on how likely it is to be a semantic version"""
-            if not version_str:
-                return -1
-
-            # Highest priority: matches semantic version with proper delimiters
-            if re.match(r'(?:[vV](?:ersion)?)?(\d+\.\d+(?:\.\d+)*[a-zA-Z]?)(?=[-\s._)]|$)', version_str):
-                return 4
-
-            # High priority: matches semantic version
-            if re.match(r'[vV]?(?:ersion\s*)?(\d+\.\d+(?:\.\d+)*[a-zA-Z]?)', version_str):
-                return 3
-
-            # Medium priority: simple number sequences that look like versions
-            if re.match(r'\d+\.\d+[a-zA-Z]?', version_str):
-                return 2
-
-            # Lower priority: single numbers that might be versions
-            if re.match(r'\d+[a-zA-Z]?', version_str):
-                return 1
-
-            return 0
 
         def is_probable_version(version_str):
             """Check if a string looks like a probable version number"""
@@ -391,8 +367,8 @@ class Game(Base):
 
             parts, _ = parsed
 
-            # Reject if first number is too large (unless it's a year)
-            if parts[0] > 100 and not (1990 <= parts[0] <= 2100):
+            # Reject if first number is too large or looks like a year
+            if parts[0] > 2100 or (parts[0] > 100 and len(str(parts[0])) == 4):
                 return False
 
             # Reject if any part is suspiciously large
@@ -401,108 +377,55 @@ class Game(Base):
 
             return True
 
-        def compare_versions(ver1, ver2):
-            """Compare two version strings, return the higher priority one"""
-            if not ver1:
-                return ver2
-            if not ver2:
-                return ver1
+        # Collect version candidates with source and priority
+        candidates = []
 
-            # Compare version scores first
-            score1 = get_version_score(ver1)
-            score2 = get_version_score(ver2)
+        # Check build.user_version first (highest priority)
+        if upload.get('build') and upload['build'] and upload['build'].get('user_version'):
+            version = upload['build']['user_version']
+            if is_probable_version(version):
+                candidates.append((version, 3))
 
-            if score1 > score2:
-                return ver1
-            if score2 > score1:
-                return ver2
+        # Check display_name (high priority)
+        if upload.get('display_name'):
+            # Look for explicit version
+            version_match = re.search(r'[vV]ersion\s*(\d+(?:\.\d+)*[a-zA-Z]?)', upload['display_name'])
+            if version_match and is_probable_version(version_match.group(1)):
+                candidates.append((version_match.group(1), 2))
+            else:
+                # Look for other version patterns
+                versions = re.finditer(r'(?:[vV](?:ersion)?)?(\d+(?:\.\d+)*[a-zA-Z]?)(?=[-\s._)]|$)',
+                                       upload['display_name'])
+                for match in versions:
+                    version = match.group(1)
+                    if is_probable_version(version):
+                        candidates.append((version, 2))
 
-            # If scores are equal, compare version numbers
-            parts1 = parse_semantic_version(ver1)
-            parts2 = parse_semantic_version(ver2)
-
-            if not parts1:
-                return ver2
-            if not parts2:
-                return ver1
-
-            # Compare numeric parts first
-            nums1, suffix1 = parts1
-            nums2, suffix2 = parts2
-
-            # Compare the parts we have, without padding
-            for n1, n2 in zip(nums1, nums2):
-                if n1 > n2:
-                    return ver1
-                if n2 > n1:
-                    return ver2
-
-            # If one version has more parts and they're equal so far,
-            # the longer one is considered higher
-            if len(nums1) > len(nums2):
-                return ver1
-            if len(nums2) > len(nums1):
-                return ver2
-
-            # If numeric parts are equal, compare suffixes
-            if suffix1 > suffix2:
-                return ver1
-            if suffix2 > suffix1:
-                return ver2
-
-            return ver1  # If completely equal, return first
-
-        def format_version(version_parts):
-            """Convert parsed version parts back to string format"""
-            if not version_parts:
-                return None
-            nums, suffix = version_parts
-            version_str = '.'.join(str(p) for p in nums)
-            if suffix:
-                version_str += suffix
-            return version_str
-
-        # Collect all possible version numbers from various sources
-        version_regex = r'(?:[vV](?:ersion)?)?(\d+(?:\.\d+){0,3}[a-zA-Z]?)(?=[-\s._)]|$)'
-        version_candidates = []
-
-        # Check build.user_version
-        if 'build' in upload and upload['build'] and upload['build'].get('user_version'):
-            version_candidates.append(upload['build']['user_version'])
-
-        # Check display_name
-        display_name = upload.get('display_name')
-        if display_name:
-            versions = re.finditer(version_regex, display_name)
-            version_candidates.extend(match.group(1) for match in versions)
-
-        # Check filename - remove expected file extensions first
+        # Check filename (lowest priority)
         filename = upload.get('filename', '')
         cleaned_filename = re.sub(r'\.(zip|tar\.bz2|tar\.gz)$', '', filename, flags=re.IGNORECASE)
-        versions = re.finditer(version_regex, cleaned_filename)
-        version_candidates.extend(match.group(1) for match in versions)
 
-        # Filter to probable versions and remove duplicates
-        version_candidates = list(set(
-            ver for ver in version_candidates
-            if is_probable_version(ver)
-        ))
+        # Look for build numbers
+        build_match = re.search(r'[bB]uild[_\s-]*(\d+)', cleaned_filename)
+        if build_match and is_probable_version(build_match.group(1)):
+            candidates.append((build_match.group(1), 1))
 
-        if not version_candidates:
-            # If no valid versions found, use timestamp
-            timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
-            return timestamp.strftime("%Y.%m.%d")
+        # Look for version patterns in filename if no build number found
+        if not build_match:
+            versions = re.finditer(r'(?:[vV](?:ersion)?)?(\d+(?:\.\d+)*[a-zA-Z]?)(?=[-\s._)]|$)', cleaned_filename)
+            for match in versions:
+                version = match.group(1)
+                if is_probable_version(version):
+                    candidates.append((version, 0))
 
-        # Compare all candidates to find the highest priority version
-        highest_version = version_candidates[0]
-        for version in version_candidates[1:]:
-            highest_version = compare_versions(highest_version, version)
+        if candidates:
+            # Sort by priority (desc) then version string
+            candidates.sort(key=lambda x: (-x[1], x[0]))
+            return candidates[0][0]
 
-        # Always return a properly formatted version string
-        parsed_version = parse_semantic_version(highest_version)
-        formatted_version = format_version(parsed_version)
-
-        return formatted_version if formatted_version else highest_version
+        # Fallback to timestamp if no versions found
+        timestamp = datetime.datetime.fromisoformat(upload['updated_at'].replace('Z', '+00:00'))
+        return timestamp.strftime("%Y.%m.%d")
 
     def get_script_stats(self, itch_api_key, upload_info):
         # Only continue if the game is made with Ren'Py or unknown

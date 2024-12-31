@@ -2,12 +2,13 @@ alembic
 audioop-lts; python_version>='3.13'
 bs4
 flake8
-Flask
 lxml_html_clean
 mypy
 psycopg2
 py-cord
 pymysql
+pytest
+pytest-cov
 requests
 requests-html
 schedule
