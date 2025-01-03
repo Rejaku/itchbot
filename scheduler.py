@@ -5,11 +5,12 @@ import time
 from typing import Optional
 
 from bs4 import BeautifulSoup
+import requests
 import schedule
 from sqlalchemy import Column, Integer, DateTime, desc
 
 import models
-from models import engine, Session, Base, Game, Rating
+from models import engine, Session, Base, Game, User, GameVersion, Rating, make_request
 
 Base.metadata.create_all(engine)
 
@@ -44,19 +45,15 @@ def refresh_tags_and_rating():
     print("\n[refresh_tags_and_rating] End\n")
 
 
-def refresh_version(itch_api_key, status=None):
+def refresh_version(itch_api_key):
     print("\n[refresh_version] Start\n")
     with Session() as session:
-        if status:
-            games = session.query(Game) \
-                .filter(Game.visible == True, Game.status.in_(status)) \
-                .order_by(Game.id) \
-                .all()
-        else:
-            games = session.query(Game) \
-                .filter(Game.status != 'Abandoned', Game.status != 'Canceled') \
-                .order_by(Game.id) \
-                .all()
+        games = session \
+            .query(Game) \
+            .filter(Game.visible == True) \
+            .filter(Game.is_feedless == True) \
+            .order_by(Game.id) \
+            .all()
         for game in games:
             try:
                 game.refresh_version(itch_api_key)
@@ -130,17 +127,24 @@ class Scheduler:
                 if existing_event:
                     continue
 
-                # Look for uploads
-                upload_list = event_row.find("div", {"class": "upload_list_widget"})
-                if not upload_list:
-                    continue
-
-                # Get game ID
+                # We'll check any game-related post - either a game cell or game link in summary
                 game_cell = event_row.find("div", {"class": "game_cell"})
                 if not game_cell or 'data-game_id' not in game_cell.attrs:
-                    continue
-
-                game_id = int(game_cell['data-game_id'])
+                    # If no game cell, try to find game link in summary
+                    short_summary = event_row.find("div", {"class": "object_short_summary"})
+                    if not short_summary:
+                        continue
+                    game_link = short_summary.find("a")
+                    if not game_link:
+                        continue
+                    # Extract game ID from URL
+                    game_url = game_link.get('href', '')
+                    try:
+                        game_id = int(Rating.get_game_id(game_url))
+                    except:
+                        continue
+                else:
+                    game_id = int(game_cell['data-game_id'])
 
                 # Get game from database
                 game = db_session.query(Game).filter_by(game_id=game_id).first()
@@ -304,10 +308,12 @@ class Scheduler:
 
     def scheduler(self):
         print("\n[scheduler] Start\n")
-        schedule.every(15).minutes.do(self.process_feed)  # New feed processing
+        schedule.every(15).minutes.do(self.process_feed)  # Feed-based updates
         schedule.every(15).minutes.do(models.Rating.import_latest_reviews)
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating)
+        # Once a day, check games that don't use feed updates
+        schedule.every().day.at("06:00").do(refresh_version, self.itch_api_key)
         while True:
             # Checks whether a scheduled task
             # is pending to run or not

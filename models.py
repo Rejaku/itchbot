@@ -88,14 +88,14 @@ class Game(Base):
     authors = Column(Text)
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     ratings = relationship("Rating", back_populates="game")
+    is_feedless = Column(Boolean, nullable=False, default=False)
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None,
-                 game_id=None, name=None,
-                 status='In development', visible=0, nsfw=False, description=None, url=None, thumb_url=None,
-                 version='unknown',
-                 tags=None, rating=None, rating_count=None, devlog=None, languages=None, platform_windows=False,
-                 platform_linux=False, platform_mac=False, platform_android=False, platform_web=False,
-                 stats_blocks=0, stats_menus=0, stats_options=0, stats_words=0, game_engine='unknown', uploads=None):
+                 game_id=None, name=None, status='In development', visible=0, nsfw=False, description=None, url=None,
+                 thumb_url=None, version='unknown', tags=None, rating=None, rating_count=None, devlog=None,
+                 languages=None, platform_windows=False, platform_linux=False, platform_mac=False,
+                 platform_android=False, platform_web=False, stats_blocks=0, stats_menus=0, stats_options=0,
+                 stats_words=0, game_engine='unknown', uploads=None, is_feedless=False):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initially_published_at
@@ -125,6 +125,7 @@ class Game(Base):
         self.stats_words = stats_words
         self.game_engine = game_engine
         self.uploads = uploads or {}
+        self.is_feedless = is_feedless
 
     def to_dict(self):
         return {
