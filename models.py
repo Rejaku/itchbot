@@ -88,7 +88,7 @@ class Game(Base):
     authors = Column(Text)
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     ratings = relationship("Rating", back_populates="game")
-    is_feedless = Column(Boolean, nullable=False, default=False)
+    is_feedless = Column(BOOLEAN, nullable=False, default=False)
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None,
                  game_id=None, name=None, status='In development', visible=0, nsfw=False, description=None, url=None,
