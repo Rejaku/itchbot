@@ -71,7 +71,7 @@ class Game(Base):
     game_engine = Column(String(50))
     error = Column(Text)
     authors = Column(Text)
-    custom_tags = Column(String(250))
+    custom_tags = Column(String(250), nullable=False)
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     is_feedless = Column(BOOLEAN, nullable=False, default=False)
     slug = Column(String(250))
@@ -99,6 +99,7 @@ class Game(Base):
         self.uploads = uploads or {}
         self.is_feedless = is_feedless
         self.slug = slug
+        self.custom_tags = ''
 
     def load_full_details(self, itch_api_key: str):
         try:
@@ -760,7 +761,6 @@ class Rating(Base):
                         )
                         session.add(new_game)
                         session.commit()
-                        session.flush()
                         game_id = new_game.id
                     elif existing_game.name != game_name or existing_game.url != game_url:
                         existing_game.name = game_name
@@ -774,7 +774,7 @@ class Rating(Base):
                                             str(review_text))
                         session.query(Rating). \
                             filter(Rating.game_id == new_review.game_id, Rating.rater_id == new_review.rater_id). \
-                            update({'visible': False})
+                            update({'is_visible': False})
                         session.commit()
                         session.add(new_review)
                         session.commit()
