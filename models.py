@@ -59,105 +59,46 @@ class Game(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     initially_published_at = Column(DateTime)
-    version_published_at = Column(DateTime)
     game_id = Column(Integer, nullable=False)
     name = Column(String(200), nullable=False)
     status = Column(String(50))
-    visible = Column(BOOLEAN, default=False)
-    nsfw = Column(BOOLEAN, default=False)
+    is_visible = Column(BOOLEAN, default=False)
+    is_nsfw = Column(BOOLEAN, default=False)
     description = Column(String(200))
     url = Column(String(250), nullable=False)
     thumb_url = Column(String(250))
-    version = Column(String(20))
     tags = Column(String(250))
-    rating = Column(Float)
-    rating_count = Column(Integer)
-    devlog = Column(String(250))
-    languages = Column(String(250))
-    platform_windows = Column(BOOLEAN, nullable=False, default=False)
-    platform_linux = Column(BOOLEAN, nullable=False, default=False)
-    platform_mac = Column(BOOLEAN, nullable=False, default=False)
-    platform_android = Column(BOOLEAN, nullable=False, default=False)
-    platform_web = Column(BOOLEAN, nullable=False, default=False)
-    stats_blocks = Column(Integer, nullable=False, default=0)
-    stats_menus = Column(Integer, nullable=False, default=0)
-    stats_options = Column(Integer, nullable=False, default=0)
-    stats_words = Column(Integer, nullable=False, default=0)
     game_engine = Column(String(50))
     error = Column(Text)
     authors = Column(Text)
+    custom_tags = Column(String(250))
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
-    ratings = relationship("Rating", back_populates="game")
     is_feedless = Column(BOOLEAN, nullable=False, default=False)
+    slug = Column(String(250))
+    ratings = relationship("Rating", back_populates="game")
+    supported_languages = relationship("GameSupportedLanguage", back_populates="game")
 
-    def __init__(self, created_at=None, updated_at=None, initially_published_at=None, version_published_at=None,
-                 game_id=None, name=None, status='In development', visible=0, nsfw=False, description=None, url=None,
-                 thumb_url=None, version='unknown', tags=None, rating=None, rating_count=None, devlog=None,
-                 languages=None, platform_windows=False, platform_linux=False, platform_mac=False,
-                 platform_android=False, platform_web=False, stats_blocks=0, stats_menus=0, stats_options=0,
-                 stats_words=0, game_engine='unknown', uploads=None, is_feedless=False):
+    def __init__(self, created_at=None, updated_at=None, initially_published_at=None, game_id=None, name=None,
+                 status='In development', is_visible=False, is_nsfw=False, description=None, url=None, thumb_url=None,
+                 tags=None, devlog=None, languages=None, game_engine='unknown', uploads=None, is_feedless=False, slug=None):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initially_published_at
-        self.version_published_at = version_published_at
         self.game_id = game_id
         self.name = name
         self.status = status
-        self.visible = visible
-        self.nsfw = nsfw
+        self.is_visible = is_visible
+        self.is_nsfw = is_nsfw
         self.description = description
         self.url = url
         self.thumb_url = thumb_url
-        self.version = version
         self.tags = tags
-        self.rating = rating
-        self.rating_count = rating_count
         self.devlog = devlog
         self.languages = languages
-        self.platform_windows = platform_windows
-        self.platform_linux = platform_linux
-        self.platform_mac = platform_mac
-        self.platform_android = platform_android
-        self.platform_web = platform_web
-        self.stats_blocks = stats_blocks
-        self.stats_menus = stats_menus
-        self.stats_options = stats_options
-        self.stats_words = stats_words
         self.game_engine = game_engine
         self.uploads = uploads or {}
         self.is_feedless = is_feedless
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'service': self.service,
-            'game_id': self.game_id,
-            'name': self.name,
-            'description': self.description,
-            'url': self.url,
-            'thumb_url': self.thumb_url,
-            'version': self.version,
-            'devlog': self.devlog,
-            'tags': self.tags,
-            'languages': self.languages,
-            'rating': self.rating,
-            'rating_count': self.rating_count,
-            'status': self.status,
-            'platform_windows': self.platform_windows,
-            'platform_linux': self.platform_linux,
-            'platform_mac': self.platform_mac,
-            'platform_android': self.platform_android,
-            'platform_web': self.platform_web,
-            'stats_blocks': self.stats_blocks,
-            'stats_menus': self.stats_menus,
-            'stats_options': self.stats_options,
-            'stats_words': self.stats_words,
-            'game_engine': self.game_engine,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-            'nsfw': self.nsfw,
-            'uploads': self.uploads
-        }
+        self.slug = slug
 
     def refresh_tags_and_rating(self):
         print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
@@ -200,9 +141,9 @@ class Game(Base):
                             self.authors += f'<a href="{author["href"]}" target="_blank">{author.text}</a>'
             nsfw = soup.find("div", {"class": "content_warning_inner"})
             if nsfw:
-                self.nsfw = True
+                self.is_nsfw = True
             else:
-                self.nsfw = False
+                self.is_nsfw = False
 
     def refresh_base_info(self, itch_api_key):
         url = 'https://api.itch.io/games/' + str(self.game_id)
@@ -223,7 +164,7 @@ class Game(Base):
         with make_request("get", url, headers={'Authorization': itch_api_key}, allow_redirects=True) as response:
             if response.status_code == 400 or response.status_code == 404:
                 print(f"\n[refresh_version] Status 400, disabling game ID {self.id}\n")
-                self.visible = False
+                self.is_visible = False
                 return
 
             seen_uploads = self.uploads or {}
@@ -236,11 +177,11 @@ class Game(Base):
             has_changes = False
             candidate_uploads = []
 
-            self.platform_windows = False
-            self.platform_linux = False
-            self.platform_mac = False
-            self.platform_android = False
-            self.platform_web = False
+            is_windows = False
+            is_linux = False
+            is_mac = False
+            is_android = False
+            is_web = False
 
             for upload in uploads_data['uploads']:
                 file_id = str(upload['id'])
@@ -256,15 +197,15 @@ class Game(Base):
                 # Update platform flags
                 if 'traits' in upload:
                     if 'p_windows' in upload['traits']:
-                        self.platform_windows = True
+                        is_windows = True
                     if 'p_linux' in upload['traits']:
-                        self.platform_linux = True
+                        is_linux = True
                     if 'p_osx' in upload['traits']:
-                        self.platform_mac = True
+                        is_mac = True
                     if 'p_android' in upload['traits']:
-                        self.platform_android = True
+                        is_android = True
                 if upload['type'] == 'html':
-                    self.platform_web = True
+                    is_web = True
 
                 # Check if the upload is new or changed
                 is_new_or_changed = (
@@ -309,28 +250,48 @@ class Game(Base):
                 upload_timestamp = datetime.datetime.fromisoformat(
                     upload_to_process['updated_at'].replace('Z', '+00:00'))
 
-                if self.version != new_version or force:
-                    with Session() as session:
-                        self.version = new_version
-                        self.version_published_at = upload_timestamp
+                with Session() as session:
+                    existing_version = session.query(GameVersion) \
+                        .filter(GameVersion.game_id == self.id) \
+                        .filter(GameVersion.is_latest == True) \
+                        .filter(GameVersion.version == new_version) \
+                        .first()
 
+                    if not existing_version or force:
                         # Get script stats for the selected upload
-                        self.get_script_stats(itch_api_key, upload_to_process)
+                        stats = self.get_script_stats(itch_api_key, upload_to_process)
 
                         # Update the game's info & devlog link
                         time.sleep(10)
                         self.refresh_tags_and_rating()
 
-                        # Add the new version to the database
+                        # Create new version
                         game_version = GameVersion(
-                            self.id, self.version, self.devlog, self.platform_windows,
-                            self.platform_linux, self.platform_mac, self.platform_android,
-                            self.platform_web, self.stats_blocks, self.stats_menus,
-                            self.stats_options, self.stats_words, datetime.datetime.utcnow(),
-                            datetime.datetime.utcnow(), self.version_published_at, self.rating,
-                            self.rating_count
+                            game_id=self.id,
+                            version=new_version,
+                            devlog=self.devlog,
+                            is_windows=is_windows,
+                            is_linux=is_linux,
+                            is_mac=is_mac,
+                            is_android=is_android,
+                            is_web=is_web,
+                            published_at=upload_timestamp,
+                            rating=self.rating,
+                            rating_count=self.rating_count
                         )
                         session.add(game_version)
+                        session.flush()
+
+                        # Create English language stats
+                        version_stats = VersionLanguageStats(
+                            game_version_id=game_version.id,
+                            iso_code='eng',
+                            blocks=stats['blocks'],
+                            words=stats['words'],
+                            menus=stats['menus'],
+                            options=stats['options']
+                        )
+                        session.add(version_stats)
                         session.commit()
 
     def extract_version(self, upload):
@@ -432,17 +393,18 @@ class Game(Base):
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
             return
-        # Reset status to 0
-        self.stats_blocks = 0
-        self.stats_menus = 0
-        self.stats_options = 0
-        self.stats_words = 0
+        stats = {
+            'blocks': None,
+            'menus': None,
+            'options': None,
+            'words': None
+        }
         url = self.url + '/file/' + str(upload_info['id'])
         print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
         with make_request("post", url, headers={'Authorization': itch_api_key}) as response:
             if response.status_code == 400 or response.status_code == 404:
-                return
+                return stats
             download = json.loads(response.text)
             if 'url' in download:
                 print("\n[get_script_stats] Download response: " + download['url'] + "\n")
@@ -450,13 +412,13 @@ class Game(Base):
                 try:
                     file = make_request("get", download['url'], allow_redirects=True)
                     if response.status_code == 400 or response.status_code == 404:
-                        return
+                        return stats
                     open(download_path, 'wb').write(file.content)
                 except RequestException as error:
-                    self.error = error
+                    self.error = str(error)
                     if os.path.isfile(download_path):
                         os.remove(download_path)
-                    return
+                    return stats
                 extract_directory = f'tmp/{upload_info["id"]}'
                 if download_path.endswith('.zip'):
                     try:
@@ -474,7 +436,7 @@ class Game(Base):
                     except (tarfile.ReadError, IOError, EOFError) as error:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
-                        return
+                        return stats
                 elif download_path.endswith('.tar.bz2'):
                     try:
                         file = tarfile.open(download_path, "r:bz2")
@@ -483,7 +445,7 @@ class Game(Base):
                     except (tarfile.ReadError, IOError, EOFError) as error:
                         if os.path.isfile(download_path):
                             os.remove(download_path)
-                        return
+                        return stats
                 directory_listing = []
                 game_dir_files = []
                 if os.path.isdir(extract_directory):
@@ -513,17 +475,18 @@ class Game(Base):
                                            cwd=game_dir, shell=True)
                             if os.path.isfile(game_dir + '/stats.json'):
                                 stats_file = open(game_dir + '/stats.json')
-                                stats = json.load(stats_file)
+                                file_stats = json.load(stats_file)
                                 stats_file.close()
-                                if stats:
-                                    self.stats_blocks = stats['blocks']
-                                    self.stats_menus = stats['menus']
-                                    self.stats_options = stats['options']
-                                    self.stats_words = stats['words']
+                                if file_stats:
+                                    stats['blocks'] = file_stats['blocks']
+                                    stats['menus'] = file_stats['menus']
+                                    stats['options'] = file_stats['options']
+                                    stats['words'] = file_stats['words']
                                     self.game_engine = "Ren'Py"
                                 os.remove(download_path)
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
+        return stats
 
 
 class GameVersion(Base):
@@ -533,64 +496,36 @@ class GameVersion(Base):
     game_id = Column(Integer, nullable=False)
     version = Column(String(20))
     devlog = Column(String(250))
-    platform_windows = Column(BOOLEAN, nullable=False, default=False)
-    platform_linux = Column(BOOLEAN, nullable=False, default=False)
-    platform_mac = Column(BOOLEAN, nullable=False, default=False)
-    platform_android = Column(BOOLEAN, nullable=False, default=False)
-    platform_web = Column(BOOLEAN, nullable=False, default=False)
-    stats_blocks = Column(Integer, nullable=False, default=0)
-    stats_menus = Column(Integer, nullable=False, default=0)
-    stats_options = Column(Integer, nullable=False, default=0)
-    stats_words = Column(Integer, nullable=False, default=0)
+    is_windows = Column(BOOLEAN, nullable=False, default=False)
+    is_linux = Column(BOOLEAN, nullable=False, default=False)
+    is_mac = Column(BOOLEAN, nullable=False, default=False)
+    is_android = Column(BOOLEAN, nullable=False, default=False)
+    is_web = Column(BOOLEAN, nullable=False, default=False)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     published_at = Column(DateTime, nullable=False)
     rating = Column(Float)
     rating_count = Column(Integer)
+    is_latest = Column(BOOLEAN, nullable=False, default=False)
+    language_stats = relationship("VersionLanguageStats", back_populates="game_version")
+    character_stats = relationship("VersionCharacterStats", back_populates="game_version")
 
-    def __init__(self, game_id, version, devlog, platform_windows, platform_linux, platform_mac, platform_android,
-                 platform_web, stats_blocks, stats_menus, stats_options, stats_words, created_at, updated_at,
-                 published_at, rating, rating_count):
+    def __init__(self, game_id, version, devlog, is_windows, is_linux, is_mac, is_android,
+                 is_web, published_at, rating, rating_count, is_latest=False):
         self.game_id = game_id
         self.version = version
         self.devlog = devlog
-        self.platform_windows = platform_windows
-        self.platform_linux = platform_linux
-        self.platform_mac = platform_mac
-        self.platform_android = platform_android
-        self.platform_web = platform_web
-        self.stats_blocks = stats_blocks
-        self.stats_menus = stats_menus
-        self.stats_options = stats_options
-        self.stats_words = stats_words
-        self.created_at = created_at or datetime.datetime.utcnow()
-        self.updated_at = updated_at or datetime.datetime.utcnow()
+        self.is_windows = is_windows
+        self.is_linux = is_linux
+        self.is_mac = is_mac
+        self.is_android = is_android
+        self.is_web = is_web
+        self.created_at = datetime.datetime.utcnow()
+        self.updated_at = datetime.datetime.utcnow()
         self.published_at = published_at
         self.rating = rating
         self.rating_count = rating_count
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'game_id': self.game_id,
-            'version': self.version,
-            'devlog': self.devlog,
-            'platform_windows': self.platform_windows,
-            'platform_linux': self.platform_linux,
-            'platform_mac': self.platform_mac,
-            'platform_android': self.platform_android,
-            'platform_web': self.platform_web,
-            'stats_blocks': self.stats_blocks,
-            'stats_menus': self.stats_menus,
-            'stats_options': self.stats_options,
-            'stats_words': self.stats_words,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-            'published_at': self.published_at,
-            'rating': self.rating,
-            'rating_count': self.rating_count
-        }
-
+        self.is_latest = is_latest
 
 class User(Base):
     __tablename__ = 'discord_users'
@@ -622,12 +557,6 @@ class Rater(Base):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
 
-    def to_dict(self):
-        return {
-            'user_id': self.user_id,
-            'name': self.name
-        }
-
 
 class Rating(Base):
     __tablename__ = 'ratings'
@@ -641,12 +570,12 @@ class Rating(Base):
     rater_id = Column(Integer, ForeignKey('raters.id'))
     rating = Column(Integer, nullable=False)
     review = Column(Text)
-    visible = Column(BOOLEAN, default=False)
-    has_review = Column(BOOLEAN, nullable=False, default=False)
+    is_visible = Column(BOOLEAN, default=False)
+    is_reviewed = Column(BOOLEAN, nullable=False, default=False)
     game = relationship("Game", back_populates="ratings")
     rater = relationship("Rater", back_populates="ratings")
 
-    def __init__(self, event_id, created_at, updated_at, published_at, game_id, rater_id, rating, review, visible=True):
+    def __init__(self, event_id, created_at, updated_at, published_at, game_id, rater_id, rating, review, is_visible=True):
         self.event_id = event_id
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
@@ -655,18 +584,8 @@ class Rating(Base):
         self.rater_id = rater_id
         self.rating = rating
         self.review = review
-        self.visible = visible
-        self.has_review = (review != '')
-
-    def to_dict(self):
-        return {
-            'event_id': self.event_id,
-            'updated_at': self.updated_at,
-            'rater_id': self.rater_id,
-            'game_id': self.game_id,
-            'rating': self.rating,
-            'review': self.review
-        }
+        self.is_visible = is_visible
+        self.is_reviewed = (review != '')
 
     @staticmethod
     @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
@@ -812,7 +731,12 @@ class Rating(Base):
                         reviewer_id = existing_reviewer.id
                     existing_game = session.query(Game).filter_by(game_id=itch_game_id).first()
                     if existing_game is None:
-                        new_game = Game(game_id=itch_game_id, name=str(game_name), url=game_url, visible=False)
+                        new_game = Game(
+                            game_id=itch_game_id,
+                            name=str(game_name),
+                            url=game_url,
+                            is_visible=False
+                        )
                         session.add(new_game)
                         session.commit()
                         session.flush()
@@ -857,3 +781,134 @@ class Rating(Base):
                 raise RuntimeError("Could not find game ID")
 
             return game_id
+
+class Language(Base):
+    __tablename__ = 'iso_639_3_languages'
+
+    id = Column(String(3), primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    part2b = Column(String(3), nullable=True)
+    part2t = Column(String(3), nullable=True)
+    part1 = Column(String(2), nullable=True)
+    scope = Column(String(1), nullable=False)  # I(ndividual), M(acrolanguage), S(pecial)
+    type = Column(String(1), nullable=False)   # A(ncient), C(onstructed), E(xtinct), H(istorical), L(iving), S(pecial)
+    ref_name = Column(String(150), nullable=False)
+    comment = Column(String(150), nullable=True)
+    flag_code = Column(String(2), nullable=False)
+
+    # Relationships
+    language_mappings = relationship("LanguageMapping", back_populates="language")
+    version_language_stats = relationship("VersionLanguageStats", back_populates="language")
+    version_character_stats = relationship("VersionCharacterStats", back_populates="language")
+
+    def __init__(self, id, ref_name, flag_code, scope='I', type='L', part2b=None, part2t=None,
+                 part1=None, comment=None, created_at=None, updated_at=None):
+        self.id = id
+        self.ref_name = ref_name
+        self.flag_code = flag_code
+        self.scope = scope
+        self.type = type
+        self.part2b = part2b
+        self.part2t = part2t
+        self.part1 = part1
+        self.comment = comment
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()
+
+
+class LanguageMapping(Base):
+    __tablename__ = 'language_mappings'
+
+    id = Column(BigInteger, Identity(), primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    game_language_key = Column(String(50), nullable=False)
+    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
+
+    # Relationship
+    language = relationship("Language", back_populates="language_mappings")
+
+    def __init__(self, game_language_key, iso_code, created_at=None, updated_at=None):
+        self.game_language_key = game_language_key
+        self.iso_code = iso_code
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()
+
+
+class GameSupportedLanguage(Base):
+    __tablename__ = 'game_supported_languages'
+
+    id = Column(BigInteger, Identity(), primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
+    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
+
+    # Relationships
+    game = relationship("Game", back_populates="supported_languages")
+    language = relationship("Language")
+
+    def __init__(self, game_id, iso_code, created_at=None, updated_at=None):
+        self.game_id = game_id
+        self.iso_code = iso_code
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()
+
+
+class VersionLanguageStats(Base):
+    __tablename__ = 'version_language_stats'
+
+    id = Column(BigInteger, Identity(), primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    game_version_id = Column(Integer, ForeignKey('game_versions.id', ondelete='CASCADE'), nullable=False)
+    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
+    blocks = Column(Integer, nullable=True)
+    words = Column(Integer, nullable=True)
+    menus = Column(Integer, nullable=True)
+    options = Column(Integer, nullable=True)
+
+    # Relationships
+    game_version = relationship("GameVersion", back_populates="language_stats")
+    language = relationship("Language", back_populates="version_language_stats")
+
+    def __init__(self, game_version_id, iso_code, blocks=None, words=None, menus=None, options=None,
+                 created_at=None, updated_at=None):
+        self.game_version_id = game_version_id
+        self.iso_code = iso_code
+        self.blocks = blocks
+        self.words = words
+        self.menus = menus
+        self.options = options
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()
+
+
+class VersionCharacterStats(Base):
+    __tablename__ = 'version_character_stats'
+
+    id = Column(BigInteger, Identity(), primary_key=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    game_version_id = Column(Integer, ForeignKey('game_versions.id', ondelete='CASCADE'), nullable=False)
+    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
+    character_id = Column(String(50), nullable=False)
+    display_name = Column(String(100), nullable=False)
+    blocks = Column(Integer, nullable=False, default=0)
+    words = Column(Integer, nullable=False, default=0)
+
+    # Relationships
+    game_version = relationship("GameVersion", back_populates="character_stats")
+    language = relationship("Language", back_populates="version_character_stats")
+
+    def __init__(self, game_version_id, iso_code, character_id, display_name, blocks=0, words=0,
+                 created_at=None, updated_at=None):
+        self.game_version_id = game_version_id
+        self.iso_code = iso_code
+        self.character_id = character_id
+        self.display_name = display_name
+        self.blocks = blocks
+        self.words = words
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()

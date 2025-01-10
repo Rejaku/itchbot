@@ -5,12 +5,11 @@ import time
 from typing import Optional
 
 from bs4 import BeautifulSoup
-import requests
 import schedule
 from sqlalchemy import Column, Integer, DateTime, desc
 
 import models
-from models import engine, Session, Base, Game, User, GameVersion, Rating, make_request
+from models import engine, Session, Base, Game, Rating
 
 Base.metadata.create_all(engine)
 
@@ -32,7 +31,7 @@ class ProcessedEvent(Base):
 def refresh_tags_and_rating():
     print("\n[refresh_tags_and_rating] Start\n")
     with Session() as session:
-        games = session.query(Game).filter(Game.visible == True).all()
+        games = session.query(Game).filter(Game.is_visible == True).all()
         for game in games:
             try:
                 game.refresh_tags_and_rating()
@@ -50,7 +49,7 @@ def refresh_version(itch_api_key):
     with Session() as session:
         games = session \
             .query(Game) \
-            .filter(Game.visible == True) \
+            .filter(Game.is_visible == True) \
             .filter(Game.is_feedless == True) \
             .order_by(Game.id) \
             .all()
@@ -185,11 +184,10 @@ class Scheduler:
                     game = Game(
                         game_id=game_id,
                         name=game_title,
-                        description=None,  # We'll get this during refresh
+                        description=None,
                         url=game_url,
                         thumb_url=game_thumb_url,
-                        version='unknown',
-                        visible=False  # Let collection process handle visibility
+                        is_visible=False
                     )
                     db_session.add(game)
                     db_session.commit()
@@ -258,8 +256,8 @@ class Scheduler:
                         .first()
                     # Update if already in DB
                     if game:
-                        if not game.visible:
-                            game.visible = True
+                        if not game.is_visible:
+                            game.is_visible = True
                             game.updated_at = datetime.datetime.utcnow()
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
@@ -284,8 +282,7 @@ class Scheduler:
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
-                            version='unknown',
-                            visible=True,
+                            is_visible=True,
                         )
                         session.add(game)
                         session.commit()

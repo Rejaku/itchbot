@@ -42,8 +42,9 @@ async def notify_about_updates():
             ).join(
                 Game, GameVersion.game_id == Game.id
             ).filter(
-                Game.visible == True,
-                GameVersion.created_at > user.processed_at
+                Game.is_visible == True,
+                GameVersion.created_at > user.processed_at,
+                GameVersion.is_latest == True
             ).order_by(
                 Game.name
             ).all()
@@ -112,11 +113,11 @@ async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bo
         with Session() as session:
             if force:
                 games = session.query(Game) \
-                    .filter(Game.visible == True, Game.name.contains(name)) \
+                    .filter(Game.is_visible == True, Game.name.contains(name)) \
                     .all()
             else:
                 games = session.query(Game) \
-                    .filter(Game.visible == True, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
+                    .filter(Game.is_visible == True, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
                     .all()
             matches = len(games)
             if matches:
@@ -151,18 +152,23 @@ async def search(ctx, name):
     if name:
         await ctx.defer()
         with Session() as session:
-            games = session.query(Game) \
-                .filter(Game.visible == True, Game.name.contains(name)) \
+            games = session.query(Game, GameVersion) \
+                .join(GameVersion, GameVersion.game_id == Game.id) \
+                .filter(
+                    Game.is_visible == True,
+                    Game.name.contains(name),
+                    GameVersion.is_latest == True
+                ) \
                 .all()
             matches = len(games)
             if matches:
                 result = f'Found {matches} matches for "{name}":\n'
-                for game in games:
+                for game, version in games:
                     if len(result) > 1600:
                         await ctx.send(result.strip())
                         result = ''
-                    result += f'{game.name}, Latest Version: {game.version}, ' \
-                              f'Last Updated At: <t:{game.version_published_at}:f> <{game.url}>\n'
+                    result += f'{game.name}, Latest Version: {version.version}, ' \
+                              f'Last Updated At: <t:{int(datetime.datetime.timestamp(version.published_at))}:f> <{game.url}>\n'
             else:
                 result = f'Found no matches for "{name}"'
     else:
