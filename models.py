@@ -411,15 +411,15 @@ class Game(Base):
         return timestamp.strftime("%Y.%m.%d")
 
     def get_script_stats(self, itch_api_key, upload_info):
-        # Only continue if the game is made with Ren'Py or unknown
-        if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
-            return
         stats = {
             'blocks': None,
             'menus': None,
             'options': None,
             'words': None
         }
+        # Only continue if the game is made with Ren'Py or unknown
+        if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
+            return stats
         url = self.url + '/file/' + str(upload_info['id'])
         print("\n[get_script_stats] URL: " + url + "\n")
         # Download the game
