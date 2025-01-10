@@ -100,6 +100,27 @@ class Game(Base):
         self.is_feedless = is_feedless
         self.slug = slug
 
+    def load_full_details(self, itch_api_key: str):
+        try:
+            # First get base info
+            self.refresh_base_info(itch_api_key)
+            time.sleep(10)  # Respect rate limits
+
+            # Then get tags and ratings
+            self.refresh_tags_and_rating()
+            time.sleep(10)  # Respect rate limits
+
+            # Finally get version info
+            self.refresh_version(itch_api_key)
+
+            # Clear any previous errors
+            self.error = None
+
+        except Exception as exception:
+            print(f"\n[Load Full Details Error] {exception}\n")
+            self.error = str(exception)
+            raise
+
     def refresh_tags_and_rating(self):
         print("\n[refresh_tags_and_rating] URL: " + self.url + "\n")
         with make_request("get", self.url, allow_redirects=True) as response:

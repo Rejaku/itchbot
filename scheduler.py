@@ -176,23 +176,10 @@ class Scheduler:
                 # Get game from database
                 game = db_session.query(Game).filter_by(game_id=game_id).first()
 
-                # If game doesn't exist, create it with basic info
-                if not game:
-                    print(f"\n[process_feed_page] Creating new game {game_id}: {game_title}\n")
+                if not game or not game.is_visible:
+                    continue
 
-                    # Create new game entry - note visible=False
-                    game = Game(
-                        game_id=game_id,
-                        name=game_title,
-                        description=None,
-                        url=game_url,
-                        thumb_url=game_thumb_url,
-                        is_visible=False
-                    )
-                    db_session.add(game)
-                    db_session.commit()
-
-                print(f"\n[process_feed_page] Processing update for game {game_id}\n")
+                print(f"\n[process_feed_page] Processing update for visible game {game_id}: {game.name}\n")
 
                 try:
                     game.refresh_version(self.itch_api_key)
@@ -201,7 +188,6 @@ class Scheduler:
                     # Record that we processed this event
                     processed_event = ProcessedEvent(event_id, game_id)
                     db_session.add(processed_event)
-
                 except Exception as exception:
                     print(f"\n[Update Error] {exception}\n")
                     game.error = str(exception)
@@ -254,11 +240,14 @@ class Scheduler:
                     game = session.query(Game) \
                         .filter(Game.game_id == collection_entry['game']['id']) \
                         .first()
+
+                    should_load_details = False
+
                     # Update if already in DB
                     if game:
                         if not game.is_visible:
-                            game.is_visible = True
                             game.updated_at = datetime.datetime.utcnow()
+                            should_load_details = True
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
                                 or collection_entry['game'].get('cover_url') != game.thumb_url:
@@ -271,7 +260,6 @@ class Scheduler:
                                 collection_entry['game']['published_at']
                             )
                             game.updated_at = datetime.datetime.utcnow()
-                        session.commit()
                     else:
                         game = Game(
                             initially_published_at=datetime.datetime.fromisoformat(
@@ -282,10 +270,21 @@ class Scheduler:
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
-                            is_visible=True,
                         )
                         session.add(game)
-                        session.commit()
+                        session.flush()
+                        should_load_details = True
+
+                    # Load full details if needed
+                    if should_load_details:
+                        try:
+                            game.is_visible = True
+                            game.load_full_details(self.itch_api_key)
+                        except Exception as e:
+                            print(f"Failed to load full details for game {game.id}: {str(e)}")
+                    session.commit()
+
+                    time.sleep(10)  # Rate limiting between games
             return True
 
     def update_watchlist(self):
