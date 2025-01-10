@@ -526,36 +526,46 @@ class Game(Base):
         return timestamp.strftime("%Y.%m.%d")
 
     def get_script_stats(self, itch_api_key, upload_info):
-        stats = {
-            'blocks': None,
-            'menus': None,
-            'options': None,
-            'words': None
+        """
+        Extract script statistics from a game archive, including language and character stats
+        """
+        empty_stats = {
+            'languages': {}
         }
+
         # Only continue if the game is made with Ren'Py or unknown
         if self.game_engine != "Ren'Py" and self.game_engine != "unknown":
-            return stats
+            return empty_stats
+
         url = self.url + '/file/' + str(upload_info['id'])
         print("\n[get_script_stats] URL: " + url + "\n")
+
         # Download the game
         with make_request("post", url, headers={'Authorization': itch_api_key}) as response:
             if response.status_code == 400 or response.status_code == 404:
-                return stats
+                return empty_stats
+
             download = json.loads(response.text)
-            if 'url' in download:
-                print("\n[get_script_stats] Download response: " + download['url'] + "\n")
-                download_path = 'tmp/' + upload_info['filename']
-                try:
-                    file = make_request("get", download['url'], allow_redirects=True)
-                    if response.status_code == 400 or response.status_code == 404:
-                        return stats
-                    open(download_path, 'wb').write(file.content)
-                except RequestException as error:
-                    self.error = str(error)
-                    if os.path.isfile(download_path):
-                        os.remove(download_path)
-                    return stats
-                extract_directory = f'tmp/{upload_info["id"]}'
+            if 'url' not in download:
+                return empty_stats
+
+            print("\n[get_script_stats] Download response: " + download['url'] + "\n")
+            download_path = 'tmp/' + upload_info['filename']
+            try:
+                file = make_request("get", download['url'], allow_redirects=True)
+                if response.status_code == 400 or response.status_code == 404:
+                    return empty_stats
+                open(download_path, 'wb').write(file.content)
+            except RequestException as error:
+                self.error = str(error)
+                if os.path.isfile(download_path):
+                    os.remove(download_path)
+                return empty_stats
+
+            extract_directory = f'tmp/{upload_info["id"]}'
+
+            # Handle different archive formats
+            try:
                 if download_path.endswith('.zip'):
                     try:
                         with zipfile.ZipFile(download_path, 'r') as zip_ref:
@@ -564,65 +574,73 @@ class Game(Base):
                         base = os.path.splitext(download_path)[0]
                         os.rename(download_path, base + '.tar.bz2')
                         download_path = base + '.tar.bz2'
+
                 if download_path.endswith('.tar.gz'):
-                    try:
-                        file = tarfile.open(download_path)
-                        file.extractall(extract_directory)
-                        file.close()
-                    except (tarfile.ReadError, IOError, EOFError) as error:
-                        if os.path.isfile(download_path):
-                            os.remove(download_path)
-                        return stats
+                    with tarfile.open(download_path) as tar:
+                        tar.extractall(extract_directory)
                 elif download_path.endswith('.tar.bz2'):
-                    try:
-                        file = tarfile.open(download_path, "r:bz2")
-                        file.extractall(extract_directory)
-                        file.close()
-                    except (tarfile.ReadError, IOError, EOFError) as error:
-                        if os.path.isfile(download_path):
-                            os.remove(download_path)
-                        return stats
+                    with tarfile.open(download_path, "r:bz2") as tar:
+                        tar.extractall(extract_directory)
+
+            except (tarfile.ReadError, IOError, EOFError) as error:
+                if os.path.isfile(download_path):
+                    os.remove(download_path)
+                return empty_stats
+
+            try:
+                # Process the extracted files
                 directory_listing = []
                 game_dir_files = []
+
                 if os.path.isdir(extract_directory):
                     directory_listing = os.listdir(extract_directory)
+
                 if len(directory_listing) == 1:
-                    game_dir = extract_directory + '/' + directory_listing[0]
+                    game_dir = os.path.join(extract_directory, directory_listing[0])
                     if os.path.isdir(game_dir):
                         game_dir_files = os.listdir(game_dir)
                 else:
                     game_dir = extract_directory
                     game_dir_files = directory_listing
-                if len(game_dir_files) > 0 and os.path.isdir(game_dir + "/game"):
-                    shutil.copyfile('./renpy/wordcounter.rpy', game_dir + '/game/wordcounter.rpy')
-                    if not os.path.isdir(game_dir + '/lib/py2-linux-x86_64') and not os.path.isdir(
-                            game_dir + '/lib/py3-linux-x86_64') and not os.path.isdir(game_dir + '/lib/linux-x86_64'):
-                        shutil.copyfile('./renpy/renpy.py', game_dir + '/renpy.py')
-                        shutil.copyfile('./renpy/renpy.sh', game_dir + '/renpy.sh')
-                        shutil.copytree('./renpy/py3-linux-x86_64', game_dir + '/lib/py3-linux-x86_64',
-                                        dirs_exist_ok=True)
-                        # Refresh the directory listing
-                        game_dir_files = os.listdir(game_dir)
-                    for game_dir_file in game_dir_files:
-                        if game_dir_file.endswith('.sh'):
-                            subprocess.run(f'chmod -R +x *',
-                                           cwd=game_dir, shell=True)
-                            subprocess.run(f'./{quote(game_dir_file)} game test',
-                                           cwd=game_dir, shell=True)
-                            if os.path.isfile(game_dir + '/stats.json'):
-                                stats_file = open(game_dir + '/stats.json')
-                                file_stats = json.load(stats_file)
-                                stats_file.close()
-                                if file_stats:
-                                    stats['blocks'] = file_stats['blocks']
-                                    stats['menus'] = file_stats['menus']
-                                    stats['options'] = file_stats['options']
-                                    stats['words'] = file_stats['words']
-                                    self.game_engine = "Ren'Py"
-                                os.remove(download_path)
+
+                if not game_dir_files or not os.path.isdir(os.path.join(game_dir, "game")):
+                    return empty_stats
+
+                # Copy necessary Ren'Py files
+                shutil.copyfile('./renpy/wordcounter.rpy', os.path.join(game_dir, 'game', 'wordcounter.rpy'))
+
+                if not any(os.path.isdir(os.path.join(game_dir, 'lib', d)) for d in
+                           ['py2-linux-x86_64', 'py3-linux-x86_64', 'linux-x86_64']):
+                    shutil.copyfile('./renpy/renpy.py', os.path.join(game_dir, 'renpy.py'))
+                    shutil.copyfile('./renpy/renpy.sh', os.path.join(game_dir, 'renpy.sh'))
+                    shutil.copytree('./renpy/py3-linux-x86_64', os.path.join(game_dir, 'lib', 'py3-linux-x86_64'),
+                                    dirs_exist_ok=True)
+                    game_dir_files = os.listdir(game_dir)
+
+                # Execute the script
+                for game_dir_file in game_dir_files:
+                    if game_dir_file.endswith('.sh'):
+                        subprocess.run('chmod -R +x *', cwd=game_dir, shell=True)
+                        subprocess.run(f'./{quote(game_dir_file)} game test', cwd=game_dir, shell=True)
+
+                        stats_path = os.path.join(game_dir, 'stats.json')
+                        if not os.path.isfile(stats_path):
+                            continue
+
+                        with open(stats_path) as stats_file:
+                            stats = json.load(stats_file)
+                            if stats and 'languages' in stats:
+                                self.game_engine = "Ren'Py"
+                                return stats
+
+            finally:
+                # Cleanup
+                if os.path.isfile(download_path):
+                    os.remove(download_path)
                 if os.path.isdir(extract_directory):
                     shutil.rmtree(extract_directory)
-        return stats
+
+        return empty_stats
 
 
 class GameVersion(Base):
