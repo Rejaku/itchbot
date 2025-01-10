@@ -110,7 +110,7 @@ class Scheduler:
             for event_row in event_rows:
                 # Get event ID from the like button
                 like_btn = event_row.find("span", {"class": "like_btn"})
-                if not like_btn:
+                if not like_btn or 'data-like_url' not in like_btn.attrs:
                     continue
 
                 event_id = int(like_btn['data-like_url'].split('/')[-2])
@@ -120,57 +120,65 @@ class Scheduler:
                 if highest_event_id and event_id <= highest_event_id:
                     return None  # This will break the pagination loop too
 
-                event_id = int(like_btn['data-like_url'].split('/')[-2])
-
                 # Check if we've already processed this event
                 existing_event = db_session.query(ProcessedEvent).filter_by(event_id=event_id).first()
                 if existing_event:
                     continue
 
-                # We'll check any game-related post - either a game cell or game link in summary
+                # Try to find game information from either game cell or summary
+                game_id = None
+                game_title = None
+                game_url = None
+                game_thumb_url = None
+
+                # First check game cell
                 game_cell = event_row.find("div", {"class": "game_cell"})
-                if not game_cell or 'data-game_id' not in game_cell.attrs:
-                    # If no game cell, try to find game link in summary
-                    short_summary = event_row.find("div", {"class": "object_short_summary"})
-                    if not short_summary:
-                        continue
-                    game_link = short_summary.find("a")
-                    if not game_link:
-                        continue
-                    # Extract game ID from URL
-                    game_url = game_link.get('href', '')
-                    try:
-                        game_id = int(Rating.get_game_id(game_url))
-                    except:
-                        continue
-                else:
+                if game_cell and 'data-game_id' in game_cell.attrs:
                     game_id = int(game_cell['data-game_id'])
+
+                    # Get game link info if available
+                    game_link = game_cell.find("a", {"class": "game_link"})
+                    if game_link:
+                        game_url = game_link.get('href')
+
+                    # Get thumbnail if available
+                    game_thumb = game_cell.find("img")
+                    if game_thumb:
+                        game_thumb_url = game_thumb.get('data-lazy_src')
+
+                # If no game cell or missing info, try summary
+                if not game_id or not game_url:
+                    short_summary = event_row.find("div", {"class": "object_short_summary"})
+                    if short_summary:
+                        game_link = short_summary.find("a")
+                        if game_link:
+                            game_url = game_link.get('href')
+                            game_title = game_link.text
+                            try:
+                                game_id = int(Rating.get_game_id(game_url))
+                            except:
+                                continue
+
+                # Skip if we couldn't get essential game info
+                if not game_id or not game_url:
+                    continue
+
+                # Get game title from summary if we didn't get it from game cell
+                if not game_title:
+                    short_summary = event_row.find("div", {"class": "object_short_summary"})
+                    if short_summary:
+                        game_link = short_summary.find("a")
+                        if game_link:
+                            game_title = game_link.text
+
+                if not game_title:
+                    continue
 
                 # Get game from database
                 game = db_session.query(Game).filter_by(game_id=game_id).first()
 
                 # If game doesn't exist, create it with basic info
                 if not game:
-                    # Extract basic game info from the feed
-                    game_cell_link = game_cell.find("a", {"class": "game_link"})
-                    if not game_cell_link:
-                        continue
-
-                    game_url = game_cell_link.get('href', '')
-                    game_thumb = game_cell.find("img")
-                    game_thumb_url = game_thumb.get('data-lazy_src') if game_thumb else None
-
-                    # Get game title from the object_short_summary
-                    short_summary = event_row.find("div", {"class": "object_short_summary"})
-                    game_title = None
-                    if short_summary:
-                        game_link = short_summary.find("a")
-                        if game_link:
-                            game_title = game_link.text
-
-                    if not game_title or not game_url:
-                        continue
-
                     print(f"\n[process_feed_page] Creating new game {game_id}: {game_title}\n")
 
                     # Create new game entry - note visible=False
