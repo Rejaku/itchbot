@@ -813,8 +813,8 @@ class Language(Base):
         self.part2t = part2t
         self.part1 = part1
         self.comment = comment
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
 
 
 class LanguageMapping(Base):
@@ -832,8 +832,8 @@ class LanguageMapping(Base):
     def __init__(self, game_language_key, iso_code, created_at=None, updated_at=None):
         self.game_language_key = game_language_key
         self.iso_code = iso_code
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
 
 
 class GameSupportedLanguage(Base):
@@ -852,8 +852,8 @@ class GameSupportedLanguage(Base):
     def __init__(self, game_id, iso_code, created_at=None, updated_at=None):
         self.game_id = game_id
         self.iso_code = iso_code
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
 
 
 class VersionLanguageStats(Base):
@@ -881,8 +881,8 @@ class VersionLanguageStats(Base):
         self.words = words
         self.menus = menus
         self.options = options
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
 
 
 class VersionCharacterStats(Base):
@@ -910,5 +910,5 @@ class VersionCharacterStats(Base):
         self.display_name = display_name
         self.blocks = blocks
         self.words = words
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.datetime.utcnow()
+        self.updated_at = updated_at or datetime.datetime.utcnow()
