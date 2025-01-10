@@ -14,7 +14,7 @@ import time
 import requests
 from requests import RequestException
 from sqlalchemy import create_engine, Column, String, Integer, Float, Text, BOOLEAN, ForeignKey, DateTime, BigInteger, \
-    Identity
+    Identity, func, or_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_json import mutable_json_type
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -33,6 +33,118 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 request_session = None
 COOKIES_FILE = 'itch_cookies.pkl'
+
+def process_language_stats(session, game_version_id, language_code, language_data, game_id):
+    """Process language statistics for a given version and language"""
+    # Create language stats record
+    version_stats = VersionLanguageStats(
+        game_version_id=game_version_id,
+        iso_code=language_code,  # You might want to map this to ISO codes
+        blocks=language_data.get('blocks'),
+        words=language_data.get('words'),
+        menus=language_data.get('menus'),
+        options=language_data.get('options')
+    )
+    session.add(version_stats)
+
+    # Add or update game supported languages
+    existing_support = session.query(GameSupportedLanguage).filter_by(
+        game_id=game_id,
+        iso_code=language_code
+    ).first()
+
+    if not existing_support:
+        game_language = GameSupportedLanguage(
+            game_id=game_id,
+            iso_code=language_code
+        )
+        session.add(game_language)
+
+    # Process character stats if available
+    characters = language_data.get('characters', {})
+    for char_id, char_data in characters.items():
+        char_stats = VersionCharacterStats(
+            game_version_id=game_version_id,
+            iso_code=language_code,
+            character_id=char_id,
+            display_name=char_data.get('display_name', char_id),
+            blocks=char_data.get('blocks', 0),
+            words=char_data.get('words', 0)
+        )
+        session.add(char_stats)
+
+
+def generate_placeholder_iso_code(session):
+    """Generate a new placeholder ISO code in the qaa-qtz range"""
+    # Get the highest placeholder code we've used so far
+    highest_placeholder = session.query(LanguageMapping.iso_code) \
+        .filter(LanguageMapping.iso_code.like('q%')) \
+        .order_by(LanguageMapping.iso_code.desc()) \
+        .first()
+
+    if not highest_placeholder:
+        # Start with 'qaa' if no placeholders exist
+        return 'qaa'
+
+    current = highest_placeholder[0]
+    # Generate next code: qaa -> qab -> qac etc.
+    last_char = chr(ord(current[-1]) + 1)
+    if last_char > 'z':
+        middle_char = chr(ord(current[-2]) + 1)
+        if middle_char > 'z':
+            # We've exhausted all combinations (extremely unlikely)
+            raise ValueError("No more placeholder codes available")
+        last_char = 'a'
+        return f"q{middle_char}{last_char}"
+    return f"{current[:-1]}{last_char}"
+
+
+def map_language_code(session, game_language):
+    """Map game language codes to ISO codes using the language_mappings table"""
+    # Convert to lowercase for consistent matching
+    game_language_lower = game_language.lower()
+
+    # Query the mapping table
+    mapping = session.query(LanguageMapping).filter(
+        func.lower(LanguageMapping.game_language_key) == game_language_lower
+    ).first()
+
+    if mapping:
+        return mapping.iso_code
+
+    # If no mapping found, try to find an exact match in languages table
+    language = session.query(Language).filter(
+        or_(
+            func.lower(Language.id) == game_language_lower,
+            func.lower(Language.part1) == game_language_lower,
+            func.lower(Language.part2b) == game_language_lower,
+            func.lower(Language.part2t) == game_language_lower
+        )
+    ).first()
+
+    if language:
+        # Create a mapping for future use
+        new_mapping = LanguageMapping(
+            game_language_key=game_language,
+            iso_code=language.id
+        )
+        session.add(new_mapping)
+        session.commit()
+        return language.id
+
+    # No existing mapping or language found, create placeholder
+    placeholder_code = generate_placeholder_iso_code(session)
+
+    # Create mapping with placeholder code
+    new_mapping = LanguageMapping(
+        game_language_key=game_language,
+        iso_code=placeholder_code
+    )
+    session.add(new_mapping)
+
+    session.commit()
+    print(f"Created placeholder mapping for {game_language}: {placeholder_code}")
+    return placeholder_code
 
 @retry(wait=wait_exponential(multiplier=2, min=30, max=120))
 def make_request(request_type, url, **kwargs):
@@ -304,16 +416,18 @@ class Game(Base):
                         session.add(game_version)
                         session.flush()
 
-                        # Create English language stats
-                        version_stats = VersionLanguageStats(
-                            game_version_id=game_version.id,
-                            iso_code='eng',
-                            blocks=stats['blocks'],
-                            words=stats['words'],
-                            menus=stats['menus'],
-                            options=stats['options']
-                        )
-                        session.add(version_stats)
+                        # Process statistics for each language
+                        if stats and 'languages' in stats:
+                            for lang_key, lang_data in stats['languages'].items():
+                                iso_code = map_language_code(session, lang_key)
+                                process_language_stats(session, game_version.id, iso_code, lang_data, self.id)
+
+                        else:
+                            version_stats = VersionLanguageStats(
+                                game_version_id=game_version.id,
+                                iso_code='eng'
+                            )
+                            session.add(version_stats)
                         session.commit()
 
     def extract_version(self, upload):
