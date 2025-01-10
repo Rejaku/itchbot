@@ -47,19 +47,6 @@ def process_language_stats(session, game_version_id, language_code, language_dat
     )
     session.add(version_stats)
 
-    # Add or update game supported languages
-    existing_support = session.query(GameSupportedLanguage).filter_by(
-        game_id=game_id,
-        iso_code=language_code
-    ).first()
-
-    if not existing_support:
-        game_language = GameSupportedLanguage(
-            game_id=game_id,
-            iso_code=language_code
-        )
-        session.add(game_language)
-
     # Process character stats if available
     characters = language_data.get('characters', {})
     for char_id, char_data in characters.items():
@@ -187,12 +174,14 @@ class Game(Base):
     uploads = Column(mutable_json_type(dbtype=JSONB, nested=True), default={})
     is_feedless = Column(BOOLEAN, nullable=False, default=False)
     slug = Column(String(250))
+    source_language_id = Column(String(3), ForeignKey('iso_639_3_languages.id'))
+    source_language = relationship("Language", foreign_keys=[source_language_id])
     ratings = relationship("Rating", back_populates="game")
-    supported_languages = relationship("GameSupportedLanguage", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, game_id=None, name=None,
                  status='In development', is_visible=False, is_nsfw=False, description=None, url=None, thumb_url=None,
-                 tags=None, devlog=None, languages=None, game_engine='unknown', uploads=None, is_feedless=False, slug=None):
+                 tags=None, devlog=None, languages=None, game_engine='unknown', uploads=None, is_feedless=False,
+                 slug=None, source_language_id=None):
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
         self.initially_published_at = initially_published_at
@@ -212,6 +201,7 @@ class Game(Base):
         self.is_feedless = is_feedless
         self.slug = slug
         self.custom_tags = ''
+        self.source_language_id = source_language_id
 
     def load_full_details(self, itch_api_key: str):
         try:
@@ -419,7 +409,10 @@ class Game(Base):
                         # Process statistics for each language
                         if stats and 'languages' in stats:
                             for lang_key, lang_data in stats['languages'].items():
-                                iso_code = map_language_code(session, lang_key)
+                                if lang_key == 'default' and self.source_language_id:
+                                    iso_code = self.source_language_id
+                                else:
+                                    iso_code = map_language_code(session, lang_key)
                                 process_language_stats(session, game_version.id, iso_code, lang_data, self.id)
 
                         else:
@@ -984,26 +977,6 @@ class LanguageMapping(Base):
 
     def __init__(self, game_language_key, iso_code, created_at=None, updated_at=None):
         self.game_language_key = game_language_key
-        self.iso_code = iso_code
-        self.created_at = created_at or datetime.datetime.utcnow()
-        self.updated_at = updated_at or datetime.datetime.utcnow()
-
-
-class GameSupportedLanguage(Base):
-    __tablename__ = 'game_supported_languages'
-
-    id = Column(BigInteger, Identity(), primary_key=True)
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
-    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
-    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
-
-    # Relationships
-    game = relationship("Game", back_populates="supported_languages")
-    language = relationship("Language")
-
-    def __init__(self, game_id, iso_code, created_at=None, updated_at=None):
-        self.game_id = game_id
         self.iso_code = iso_code
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()

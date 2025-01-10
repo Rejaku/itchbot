@@ -247,6 +247,8 @@ class Scheduler:
                     if game:
                         if not game.is_visible:
                             game.updated_at = datetime.datetime.utcnow()
+                            if not game.source_language_id:
+                                game.source_language_id = 'eng'
                             should_load_details = True
                         if collection_entry['game'].get('title') != game.name \
                                 or collection_entry['game'].get('short_text') != game.description \
@@ -270,6 +272,7 @@ class Scheduler:
                             description=collection_entry['game'].get('short_text'),
                             url=collection_entry['game']['url'],
                             thumb_url=collection_entry['game'].get('cover_url'),
+                            source_language_id='eng'
                         )
                         session.add(game)
                         session.flush()
