@@ -180,7 +180,7 @@ init 10000 python:
             # Add character stats
             for char_var, char_count in data["characters"].items():
                 lang_report["characters"][char_var] = {
-                    "display_name": defined_characters[char_var][lang] if char_var is not "narrator" else "Narrator",
+                    "display_name": defined_characters[char_var][lang] if char_var != "narrator" else "Narrator",
                     "blocks": char_count.blocks,
                     "words": char_count.words
                 }
