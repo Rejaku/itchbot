@@ -76,7 +76,6 @@ class Game(Base):
     is_feedless = Column(BOOLEAN, nullable=False, default=False)
     slug = Column(String(250))
     ratings = relationship("Rating", back_populates="game")
-    supported_languages = relationship("GameSupportedLanguage", back_populates="game")
 
     def __init__(self, created_at=None, updated_at=None, initially_published_at=None, game_id=None, name=None,
                  status='In development', is_visible=False, is_nsfw=False, description=None, url=None, thumb_url=None,
@@ -719,26 +718,6 @@ class LanguageMapping(Base):
 
     def __init__(self, game_language_key, iso_code, created_at=None, updated_at=None):
         self.game_language_key = game_language_key
-        self.iso_code = iso_code
-        self.created_at = created_at or datetime.datetime.utcnow()
-        self.updated_at = updated_at or datetime.datetime.utcnow()
-
-
-class GameSupportedLanguage(Base):
-    __tablename__ = 'game_supported_languages'
-
-    id = Column(BigInteger, Identity(), primary_key=True)
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
-    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
-    iso_code = Column(String(3), ForeignKey('iso_639_3_languages.id'), nullable=False)
-
-    # Relationships
-    game = relationship("Game", back_populates="supported_languages")
-    language = relationship("Language")
-
-    def __init__(self, game_id, iso_code, created_at=None, updated_at=None):
-        self.game_id = game_id
         self.iso_code = iso_code
         self.created_at = created_at or datetime.datetime.utcnow()
         self.updated_at = updated_at or datetime.datetime.utcnow()
