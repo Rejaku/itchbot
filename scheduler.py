@@ -313,7 +313,6 @@ class Scheduler:
     def scheduler(self):
         print("\n[scheduler] Start\n")
         schedule.every(15).minutes.do(self.process_feed)  # Feed-based updates
-        schedule.every(15).minutes.do(models.Rating.import_latest_reviews)
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating)
         # Once a day, check games that don't use feed updates
