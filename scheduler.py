@@ -2,9 +2,7 @@ import datetime
 import json
 import threading
 import time
-from typing import Optional
 
-from bs4 import BeautifulSoup
 import schedule
 from sqlalchemy import Column, Integer, DateTime, desc
 
@@ -77,150 +75,6 @@ class Scheduler:
             self.request_session = Rating.get_request_session()
         return self.request_session
 
-    def process_feed_page(self, from_event: Optional[int] = None) -> Optional[int]:
-        """Process a single feed page and return the next page event ID if available"""
-        url = 'https://itch.io/my-feed?filter=posts&format=json'
-        if from_event:
-            url += f'&from_event={from_event}'
-
-        print(f"\n[process_feed_page] URL: {url}\n")
-
-        session = self.get_request_session()
-        response = session.get(url, timeout=30)
-        if response.status_code != 200:
-            print(f"\n[process_feed_page] Error: Status code {response.status_code}\n")
-            return None
-
-        feed_data = json.loads(response.text)
-
-        # Parse the content with BeautifulSoup
-        soup = BeautifulSoup(feed_data['content'], 'html.parser')
-
-        # Find all event rows
-        event_rows = soup.find_all("div", {"class": "event_row"})
-
-        with Session() as db_session:
-            # Get highest processed event ID once before the loop
-            highest_processed = db_session.query(ProcessedEvent) \
-                .order_by(desc(ProcessedEvent.event_id)) \
-                .first()
-            highest_event_id = highest_processed.event_id if highest_processed else None
-
-            for event_row in event_rows:
-                # Get event ID from the like button
-                like_btn = event_row.find("span", {"class": "like_btn"})
-                if not like_btn or 'data-like_url' not in like_btn.attrs:
-                    continue
-
-                event_id = int(like_btn['data-like_url'].split('/')[-2])
-
-                # If we've reached an event ID that's lower than or equal to our highest processed ID,
-                # we can stop processing entirely
-                if highest_event_id and event_id <= highest_event_id:
-                    return None  # This will break the pagination loop too
-
-                # Check if we've already processed this event
-                existing_event = db_session.query(ProcessedEvent).filter_by(event_id=event_id).first()
-                if existing_event:
-                    continue
-
-                # Try to find game information from either game cell or summary
-                game_id = None
-                game_title = None
-                game_url = None
-                game_thumb_url = None
-
-                # First check game cell
-                game_cell = event_row.find("div", {"class": "game_cell"})
-                if game_cell and 'data-game_id' in game_cell.attrs:
-                    game_id = int(game_cell['data-game_id'])
-
-                    # Get game link info if available
-                    game_link = game_cell.find("a", {"class": "game_link"})
-                    if game_link:
-                        game_url = game_link.get('href')
-
-                    # Get thumbnail if available
-                    game_thumb = game_cell.find("img")
-                    if game_thumb:
-                        game_thumb_url = game_thumb.get('data-lazy_src')
-
-                # If no game cell or missing info, try summary
-                if not game_id or not game_url:
-                    short_summary = event_row.find("div", {"class": "object_short_summary"})
-                    if short_summary:
-                        game_link = short_summary.find("a")
-                        if game_link:
-                            game_url = game_link.get('href')
-                            game_title = game_link.text
-                            try:
-                                game_id = int(Rating.get_game_id(game_url))
-                            except:
-                                continue
-
-                # Skip if we couldn't get essential game info
-                if not game_id or not game_url:
-                    continue
-
-                # Get game title from summary if we didn't get it from game cell
-                if not game_title:
-                    short_summary = event_row.find("div", {"class": "object_short_summary"})
-                    if short_summary:
-                        game_link = short_summary.find("a")
-                        if game_link:
-                            game_title = game_link.text
-
-                if not game_title:
-                    continue
-
-                # Get game from database
-                game = db_session.query(Game).filter_by(game_id=game_id).first()
-
-                if not game or not game.is_visible:
-                    continue
-
-                print(f"\n[process_feed_page] Processing update for visible game {game_id}: {game.name}\n")
-
-                try:
-                    game.refresh_version(self.itch_api_key)
-                    game.error = None
-
-                    # Record that we processed this event
-                    processed_event = ProcessedEvent(event_id, game_id)
-                    db_session.add(processed_event)
-                except Exception as exception:
-                    print(f"\n[Update Error] {exception}\n")
-                    game.error = str(exception)
-                db_session.commit()
-                time.sleep(10)
-
-        return feed_data.get('next_page')
-
-    def process_feed(self):
-        """Process the feed starting from the last processed event"""
-        print("\n[process_feed] Start\n")
-
-        with Session() as session:
-            # Get highest event ID we've processed
-            last_processed = session.query(ProcessedEvent) \
-                .order_by(desc(ProcessedEvent.event_id)) \
-                .first()
-            last_event_id = last_processed.event_id if last_processed else None
-
-        current_page = None
-        while True:
-            next_page = self.process_feed_page(current_page)
-
-            if not next_page:
-                break
-
-            if last_event_id and next_page <= last_event_id:
-                break
-
-            current_page = next_page
-            time.sleep(30)  # Delay between pages
-
-        print("\n[process_feed] End\n")
 
     def update_watchlist_page(self, page: int):
         with models.make_request(
@@ -312,7 +166,6 @@ class Scheduler:
 
     def scheduler(self):
         print("\n[scheduler] Start\n")
-        schedule.every(15).minutes.do(self.process_feed)  # Feed-based updates
         schedule.every().day.at("00:00").do(self.update_watchlist)
         schedule.every().day.at("03:00").do(refresh_tags_and_rating)
         # Once a day, check games that don't use feed updates
