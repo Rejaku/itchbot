@@ -4,19 +4,11 @@ import os
 import time
 
 from discord.ext import commands, tasks
-from models import engine, Session, Base, Game, User, GameVersion
-from scheduler import Scheduler
+from models import Session, Game, User, GameVersion
 
 DISCORD_API_KEY = os.environ['DISCORD_API_KEY']
 DISCORD_ADMIN_ID = os.environ['DISCORD_ADMIN_ID']
 DISCORD_NOTIFICATIONS_CHANNEL_ID = os.environ['DISCORD_NOTIFICATIONS_CHANNEL_ID']
-ITCH_API_KEY = os.environ['ITCH_API_KEY']
-ITCH_COLLECTION_ID = os.environ['ITCH_COLLECTION_ID']
-
-Base.metadata.create_all(engine)
-
-scheduler = Scheduler()
-scheduler.run(ITCH_API_KEY, ITCH_COLLECTION_ID)
 
 bot = commands.Bot()
 
@@ -101,50 +93,6 @@ async def unsubscribe(ctx):
             await ctx.respond('You\'ve unsubscribed from update infos.')
         else:
             await ctx.respond('You\'re not currently subscribed.')
-
-
-@bot.slash_command(name="refresh")
-async def refresh(ctx, name, refresh_version: bool = True, refresh_base_info: bool = False, refresh_tags: bool = False, force: bool = False):
-    if int(ctx.author.id) != int(DISCORD_ADMIN_ID):
-        await ctx.respond('You\'re not authorized to use this command')
-        return
-
-    if name:
-        with Session() as session:
-            if force:
-                games = session.query(Game) \
-                    .filter(Game.is_visible == True, Game.name.contains(name)) \
-                    .all()
-            else:
-                games = session.query(Game) \
-                    .filter(Game.is_visible == True, Game.status != 'Abandoned', Game.status != 'Canceled', Game.name.contains(name)) \
-                    .all()
-            matches = len(games)
-            if matches:
-                await ctx.respond(f'Refreshing {matches} matches for "{name}"')
-                for game in games:
-                    try:
-                        game.error = None
-                        if refresh_base_info:
-                            game.refresh_base_info(ITCH_API_KEY)
-                            session.commit()
-                            time.sleep(10)
-                        if refresh_tags:
-                            game.refresh_tags_and_rating()
-                            session.commit()
-                            time.sleep(10)
-                        if refresh_version:
-                            game.refresh_version(ITCH_API_KEY, force)
-                            session.commit()
-                            time.sleep(10)
-                    except Exception as exception:
-                        print("\n[Update Error] ", exception, "\n")
-                        game.error = exception
-                        session.commit()
-            else:
-                await ctx.respond(f'Found no matches for "{name}"')
-    else:
-        await ctx.respond('Usage: <command> <search term>')
 
 
 @bot.slash_command(name="search")
