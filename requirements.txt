@@ -1,21 +1,2 @@
-alembic
 audioop-lts; python_version>='3.13'
-bs4
-flake8
-lxml_html_clean
-mypy
-psycopg2
 py-cord
-pymysql
-pytest
-pytest-cov
-requests
-requests-html
-schedule
-sqlalchemy
-sqlalchemy2-stubs
-sqlalchemy-json
-tenacity
-types-beautifulsoup4
-types-waitress
-waitress
