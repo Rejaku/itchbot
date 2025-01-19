@@ -1,5 +1,4 @@
 # This bot requires the 'message_content' privileged intent to function.
-import datetime
 import os
 import requests
 from discord.ext import commands, tasks
@@ -33,45 +32,64 @@ async def notify_about_updates():
     print("\n[notify_about_updates] Start\n")
     await bot.wait_until_ready()
 
+    def build_updates_message(updates):
+        result = f'Found {len(updates)} new updates:\n'
+        update_message_chunks = []
+
+        for game in updates:
+            update_text = (
+                f'{game["name"]}, Latest Version: {game["version"]}, '
+                f'Last Updated At: <t:{game["published_at"]}:f> '
+                f'<{game["url"]}> | <{game["devlog"]}>\n'
+            )
+
+            if len(result) + len(update_text) > 1600:
+                update_message_chunks.append(result)
+                result = update_text
+            else:
+                result += update_text
+
+        if result:
+            update_message_chunks.append(result)
+
+        return update_message_chunks
+
     try:
         response = requests.post(
             f'{LARAVEL_API_URL}/api/discord/updates',
             headers=api_headers(),
-            json={
-                'discord_id': DISCORD_ADMIN_ID,
-                'after': datetime.datetime.utcnow().isoformat()
-            }
         )
         response.raise_for_status()
         data = response.json()
 
         if data['updates']:
-            # Get Discord channel and user objects
-            discord_user = bot.get_user(int(DISCORD_ADMIN_ID)) or await bot.fetch_user(int(DISCORD_ADMIN_ID))
-            discord_channel = bot.get_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID)) \
-                              or await bot.fetch_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID))
+            message_chunks = build_updates_message(data['updates'])
 
-            result = f'Found {len(data["updates"])} new updates:\n'
+            # Send DMs to all subscribed users
+            for discord_id in data['discord_users']:
+                try:
+                    # Get Discord user object
+                    discord_user = bot.get_user(int(discord_id)) or await bot.fetch_user(int(discord_id))
+                    if not discord_user:
+                        continue
 
-            for game in data['updates']:
-                update_text = (
-                    f'{game["name"]}, Latest Version: {game["version"]}, '
-                    f'Last Updated At: <t:{game["published_at"]}:f> '
-                    f'<{game["url"]}> | <{game["devlog"]}>\n'
-                )
+                    for chunk in message_chunks:
+                        await discord_user.send(chunk)
 
-                if len(result) + len(update_text) > 1600:
-                    await discord_user.send(result)
+                except Exception as e:
+                    print(f"Error sending notification to user {discord_id}: {str(e)}")
+                    continue
+
+            # If updates were found and admin user is in the list, send to notification channel
+            if DISCORD_NOTIFICATIONS_CHANNEL_ID and DISCORD_ADMIN_ID in data['discord_users']:
+                try:
+                    discord_channel = bot.get_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID)) \
+                                      or await bot.fetch_channel(int(DISCORD_NOTIFICATIONS_CHANNEL_ID))
                     if discord_channel:
-                        await discord_channel.send(result)
-                    result = update_text
-                else:
-                    result += update_text
-
-            if result:
-                await discord_user.send(result)
-                if discord_channel:
-                    await discord_channel.send(result)
+                        for chunk in message_chunks:
+                            await discord_channel.send(chunk)
+                except Exception as e:
+                    print(f"Error sending to notification channel: {str(e)}")
 
     except Exception as e:
         print(f"Error in notify_about_updates: {str(e)}")
